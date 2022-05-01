@@ -18,7 +18,21 @@ void Fields::calculate_fluxes(Grid &grid) {}
 
 void Fields::calculate_rs(Grid &grid) {}
 
-void Fields::calculate_velocities(Grid &grid) {}
+void Fields::calculate_velocities(Grid &grid) {
+
+    for (auto currentCell : grid.fluid_cells()) {
+    
+        int i = currentCell->i();
+        int j = currentCell->j();
+
+
+        _U(i, j) = _F(i, j) - (_dt/grid._dx)*(_P(i + 1, j) - _P(i, j));
+
+        _V(i, j) = _G(i, j) - (_dt/grid._dy)*(_P(i, j + 1) - _P(i, j));
+    
+    }
+
+}
 
 double Fields::calculate_dt(Grid &grid) { return _dt; }
 
