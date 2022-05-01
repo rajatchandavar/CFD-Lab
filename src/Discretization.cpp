@@ -14,7 +14,17 @@ Discretization::Discretization(double dx, double dy, double gamma) {
 
 double Discretization::convection_u(const Matrix<double> &U, const Matrix<double> &V, int i, int j) {}
 
-double Discretization::convection_v(const Matrix<double> &U, const Matrix<double> &V, int i, int j) {}
+double Discretization::convection_v(const Matrix<double> &U, const Matrix<double> &V, int i, int j) {
+    double dv2_dy = 1 / _dy * (pow((V(i, j) + V(i, j + 1)) / 2, 2) - pow((V(i, j - 1) + V(i, j)) / 2, 2)) +
+                    _gamma / _dy * (std::abs(V(i, j) + V(i, j + 1)) * (V(i, j) - V(i, j + 1)) / 4 - 
+                                    std::abs(V(i, j - 1) + V(i, j)) * (V(i, j - 1) - V(i, j)) / 4);
+    double duv_dx = 1 / _dx * ((U(i, j) + U(i, j + 1)) * (V(i, j) + V(i+1, j)) / 4 - 
+                               (U(i - 1, j) + U(i - 1, j + 1)) * (V(i - 1, j) + V(i, j)) / 4) +
+                    _gamma / _dx * (std::abs(U(i, j) + U(i, j + 1)) * (V(i, j) - V(i + 1, j)) / 4 - 
+                                    std::abs(U(i - 1, j) + U(i - 1, j + 1)) * (V(i - 1, j) - V(i, j)) / 4);
+    double result = dv2_dy + duv_dx;
+    return result;
+}
 
 double Discretization::diffusion(const Matrix<double> &A, int i, int j) {}
 
