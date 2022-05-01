@@ -16,7 +16,13 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 
 void Fields::calculate_fluxes(Grid &grid) {}
 
-void Fields::calculate_rs(Grid &grid) {}
+void Fields::calculate_rs(Grid &grid) {
+    for (auto currentCell : grid.fluid_cells()) {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        _RS(i, j) = 1 / _dt * ((_F(i, j) - _F(i - 1, j)) / grid._dx + 
+                               (_G(i, j) - _G(i, j - 1)) / grid._dy); 
+}
 
 void Fields::calculate_velocities(Grid &grid) {
 
