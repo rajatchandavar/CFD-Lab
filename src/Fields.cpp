@@ -14,7 +14,16 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
 }
 
-void Fields::calculate_fluxes(Grid &grid) {}
+void Fields::calculate_fluxes(Grid &grid) {
+    
+    for (auto currentCell : grid.fluid_cells()) {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        _F(i,j) = _U(i,j) + _dt * (_nu* (iscretization::diffusion(_U,i,j) - Discretization::convection_u); 
+        _G(i,j) = _V(i,j) + dt * (_nu*Discretization::diffusion(_V,i,j) - Discretization::convection_v + 9.81);
+}
+    
+}
 
 void Fields::calculate_rs(Grid &grid) {
     for (auto currentCell : grid.fluid_cells()) {
@@ -22,6 +31,7 @@ void Fields::calculate_rs(Grid &grid) {
         int j = currentCell->j();
         _RS(i, j) = 1 / _dt * ((_F(i, j) - _F(i - 1, j)) / grid._dx + 
                                (_G(i, j) - _G(i, j - 1)) / grid._dy); 
+}
 }
 
 void Fields::calculate_velocities(Grid &grid) {
