@@ -11,15 +11,18 @@ void FixedWallBoundary::apply(Fields &field) {
 
         // Bottom wall
 
+        int imax = 10;
+        int jmax = 10;
+
         for (int i = 1; i <= imax; i++) {
 
-            _U(i, 0) = -_U(i, 1);
-            _V(i, 0) = 0.0;
+            field.u(i, 0) = -field.u(i, 1);
+            field.v(i, 0) = 0.0;
         }
 
         for (int i = 0; i <= imax; i++) {
 
-            _P(i, 0) = _P(i, 1);
+            field.p(i, 0) = field.p(i, 1);
 
         }
 
@@ -27,26 +30,26 @@ void FixedWallBoundary::apply(Fields &field) {
 
         for (int j = 1; j <= jmax; j++) {
 
-            _U(0, j) = 0.0;
-            _V(0, j) = -_V(1, j);
+            field.u(0, j) = 0.0;
+            field.v(0, j) = -field.v(1, j);
         }
 
         for (int j = 1; j <= jmax; j++) {
 
-            _P(0, j) = _P(1, j);
+            field.p(0, j) = field.p(1, j);
         }
 
         // Right wall
 
         for (int j = 1; j <= jmax; j++) {
 
-            _U(imax, j) = 0.0;
-            _V(imax + 1, j) = -_V(imax, j);
+            field.u(imax, j) = 0.0;
+            field.v(imax + 1, j) = -field.v(imax, j);
         }
 
         for (int j = 1; j <= jmax; j++) {
 
-            _P(imax + 1, j) = _P(imax, j);
+            field.p(imax + 1, j) = field.p(imax, j);
         }
 
 
@@ -63,17 +66,19 @@ MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, 
 void MovingWallBoundary::apply(Fields &field) {
 
     // later work
-    int j = jmaxb();
+    int jmaxb = 12;
+        int imax = 10;
+        int jmax = 10;
 
         for (int i = 0; i <= imax; i++) {
 
-            _U(i, j) = 2 - _U(i, j - 1);
-            _V(i, j) = 0.0;
+            field.u(i, jmax) = 2 - field.u(i, jmax - 1);
+            field.v(i, jmax) = 0.0;
         }
 
         for (int i = 0; i <= imax; i++) {
 
-            _P(i, jmaxb) = _P(i, jmaxb - 1);
+            field.p(i, jmaxb) = field.p(i, jmaxb - 1);
         }
 
 }

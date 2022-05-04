@@ -16,7 +16,7 @@ double Discretization::convection_u(const Matrix<double> &U, const Matrix<double
 double du2_dx = 1/ _dx * (pow((U(i,j)+U(i + 1,j)) / 2, 2) - pow((U(i,j)+U(i - 1, j)) / 2, 2)) +
                         _gamma/_dx * ((std::abs(U(i, j)+U(i + 1, j)) * (U(i + 1, j)-U(i, j)) / 4) -
                         std::abs(U(i, j)+U(i - 1, j))*(U(i - 1, j)-U(i, j)) / 4) ;
-double duv_dy = 1/ _dy * ( (V(i, j) + V(i + 1, j)*U(i, j + U(i, j + 1)) / 4 - ( (V(i, j - 1) +
+double duv_dy = 1/ _dy * (V(i, j) + V(i + 1, j)*U(i, j + U(i, j + 1)) / 4 - ( (V(i, j - 1) +
                          V(i + 1, j - 1 )) * (U(i, j - 1) + U(i, j)) / 4 )) +
                         _gamma * _dy * ( (std::abs(V(i, j)+V(i + 1, j))*(U(i, j) - U(i, j + 1)) / 4) - 
                         (std::abs(V(i, j - 1) + V(i + 1, j - 1)) * (U(i, j - 1) - U(i, j)) / 4 ));    
