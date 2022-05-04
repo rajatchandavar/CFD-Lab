@@ -11,8 +11,8 @@ void FixedWallBoundary::apply(Fields &field) {
 
         // Bottom wall
 
-        int imax = 10;
-        int jmax = 10;
+        int imax = field.p_matrix().imax();
+        int jmax = field.p_matrix().jmax();
 
         for (int i = 1; i <= imax; i++) {
 
@@ -23,6 +23,12 @@ void FixedWallBoundary::apply(Fields &field) {
         for (int i = 0; i <= imax; i++) {
 
             field.p(i, 0) = field.p(i, 1);
+
+        }
+
+        for (int i = 0; i <= imax; i++) {
+         
+            field.g(i, 0) = field.v(i, 0);
 
         }
 
@@ -37,6 +43,14 @@ void FixedWallBoundary::apply(Fields &field) {
         for (int j = 1; j <= jmax; j++) {
 
             field.p(0, j) = field.p(1, j);
+        
+        }
+
+        for (int j = 0; j <= jmax; j++) {
+
+            
+            field.f(0, j) = field.u(0, j);
+
         }
 
         // Right wall
@@ -50,8 +64,15 @@ void FixedWallBoundary::apply(Fields &field) {
         for (int j = 1; j <= jmax; j++) {
 
             field.p(imax + 1, j) = field.p(imax, j);
+        
         }
 
+        for (int j = 0; j <= jmax; j++) {
+
+            
+            field.f(imax, j) = field.u(imax, j);
+
+        }
 
 }
 
@@ -64,11 +85,9 @@ MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, 
     : _cells(cells), _wall_velocity(wall_velocity), _wall_temperature(wall_temperature) {}
 
 void MovingWallBoundary::apply(Fields &field) {
-
-    // later work
-    int jmaxb = 12;
-        int imax = 10;
-        int jmax = 10;
+    
+        int imax = field.p_matrix().imax();
+        int jmax = field.p_matrix().jmax();
 
         for (int i = 0; i <= imax; i++) {
 
@@ -78,7 +97,15 @@ void MovingWallBoundary::apply(Fields &field) {
 
         for (int i = 0; i <= imax; i++) {
 
-            field.p(i, jmaxb) = field.p(i, jmaxb - 1);
+            field.p(i, jmax + 2) = field.p(i, jmax + 1);
+
+        }
+
+        for (int i = 0; i <= imax; i++) {
+
+
+            field.g(i, jmax) = field.v(i, jmax);
+
         }
 
 }
