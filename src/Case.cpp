@@ -180,6 +180,21 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
+    double res;
+    int iter;
+
+    while(t < t_end){
+        _boundaries.apply(_field);
+        _field.calculate_fluxes(_grid);
+        _field.calculate_rs(_grid);
+        do{
+            res = _pressure_solver.solve(_field, _grid, _boundaries);
+            ++iter;
+        }while(res > eps && iter < itermax);
+        _field.calculate_velocities(_grid);
+        output_vtk(_output_freq, 0);//TO BE SEEN
+
+    }
 }
 
 void Case::output_vtk(int timestep, int my_rank) {
