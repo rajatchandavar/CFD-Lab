@@ -183,14 +183,25 @@ void Case::simulate() {
     double res;
     int iter;
 
-    while(t < t_end){
-        _boundaries.apply(_field);
+    std::unique_ptr<Boundary> mb, fb;
+    while(t < _t_end){
+        // mb = std::make_unique<MovingWallBoundary>(_grid.fluid_cells,LidDrivenCavity::wall_velocity);
+        // mb->apply(_field);
+        // fb = std::make_unique<FixedWallBoundary>(_grid.fluid_cells);
+        // fb->apply(_field);
+        
+        _boundaries[0]->apply(_field);
+        _boundaries[1]->apply(_field);
+
+        //_boundaries->apply(_field);
         _field.calculate_fluxes(_grid);
         _field.calculate_rs(_grid);
+        std::cout << "In while simulate";
         do{
-            res = _pressure_solver.solve(_field, _grid, _boundaries);
+            res = _pressure_solver->solve(_field, _grid, _boundaries);
             ++iter;
-        }while(res > eps && iter < itermax);
+            std::cout << "In P SOR";
+        }while(res > _tolerance && iter < _max_iter);
         _field.calculate_velocities(_grid);
         output_vtk(_output_freq, 0);//TO BE SEEN
 

@@ -9,6 +9,7 @@
 
 int main(int argn, char **args) {
 
+    std::cout << "jbakbf";
     if (argn > 1) {
         std::string file_name{args[1]};
         Case problem(file_name, argn, args);
