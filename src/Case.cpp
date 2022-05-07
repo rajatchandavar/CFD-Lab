@@ -190,7 +190,8 @@ void Case::simulate() {
     int iter, n = 0;
 
     while(t < _t_end){
-
+        
+        dt = _field.calculate_dt(_grid);
         _boundaries[0]->apply(_field);
         _boundaries[1]->apply(_field);
 
