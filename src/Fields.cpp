@@ -41,7 +41,11 @@ void Fields::calculate_velocities(Grid &grid) {
     }
 }
 
-double Fields::calculate_dt(Grid &grid) { return _dt; }
+double Fields::calculate_dt(Grid &grid) {
+    double t1 = 1 / (2 * nu * (1/(grid.dx*grid.dx) + 1/(grid.dy*grid.dy)));
+    
+    _dt = _tau * std::min(t1, t2, t3);
+}
 
 double &Fields::p(int i, int j) { return _P(i, j); }
 double &Fields::u(int i, int j) { return _U(i, j); }
