@@ -104,7 +104,8 @@ void MovingWallBoundary::apply(Fields &field) {
             int j = currentCell->j();
             field.u(i, j) = 2 * _wall_velocity[8] - field.u(i, j-1) ;
             std::cout << _wall_velocity[8];
-            field.v(i,j) = 0.0;
+            field.v(i,j) = 0.0; //not necessary but done for sanity
+            field.v(i,j - 1) = 0.0;//Since v grid is staggered, add appr comments
             field.p(i,j) = field.p(i, j-1);
             field.g(i,j) = field.v(i,j);
         }

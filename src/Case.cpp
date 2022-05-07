@@ -190,7 +190,7 @@ void Case::simulate() {
         // fb = std::make_unique<FixedWallBoundary>(_grid.fluid_cells);
         // fb->apply(_field);
         
-        // _boundaries[0]->apply(_field);
+        _boundaries[0]->apply(_field);
         _boundaries[1]->apply(_field);
 
         //_boundaries->apply(_field);
@@ -204,7 +204,7 @@ void Case::simulate() {
         }while(res > _tolerance && iter < _max_iter);
         _field.calculate_velocities(_grid);
         output_vtk(_output_freq, 0);//TO BE SEEN
-
+        t = t + dt;
     }
 }
 
