@@ -186,6 +186,32 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
+    double res;
+    int iter, n = 0;
+
+    while(t < _t_end){
+
+        _boundaries[0]->apply(_field);
+        _boundaries[1]->apply(_field);
+
+        _field.calculate_fluxes(_grid);
+        _field.calculate_rs(_grid);
+
+        iter = 0;
+
+        do{
+            res = _pressure_solver->solve(_field, _grid, _boundaries);
+            ++iter;
+        }while(res > _tolerance && iter < _max_iter);
+
+        std::cout << res << '\n';
+
+        _field.calculate_velocities(_grid);
+        output_vtk(_output_freq, n);
+        t = t + dt;
+        n = n + 1;
+    }
+
 }
 
 void Case::output_vtk(int timestep, int my_rank) {
