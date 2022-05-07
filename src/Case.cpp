@@ -192,6 +192,8 @@ void Case::simulate() {
     while(t < _t_end){
         
         dt = _field.calculate_dt(_grid);
+        t = t + dt;
+        std::cout<<"dt "<<dt<<"\n";
         _boundaries[0]->apply(_field);
         _boundaries[1]->apply(_field);
 
@@ -205,11 +207,10 @@ void Case::simulate() {
             ++iter;
         }while(res > _tolerance && iter < _max_iter);
 
-        std::cout << res << '\n';
+        std::cout << "res "<<res << '\n';
 
         _field.calculate_velocities(_grid);
         output_vtk(_output_freq, n);
-        t = t + dt;
         n = n + 1;
     }
 
