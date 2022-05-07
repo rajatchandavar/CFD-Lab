@@ -43,6 +43,12 @@ void Fields::calculate_velocities(Grid &grid) {
 
 double Fields::calculate_dt(Grid &grid) {
     double t1 = 1 / (2 * nu * (1/(grid.dx*grid.dx) + 1/(grid.dy*grid.dy)));
+
+    auto fn = [](auto &a, auto &b) {return abs(a) < abs(b);};
+
+    double t2 = grid._dx / std::abs(*std::max_element(_U.begin(), _U.end(), fn));
+
+    double t3 = grid._dy / std::abs(*std::max_element(_V.begin(), _V.end(), fn));
     
     _dt = _tau * std::min(t1, t2, t3);
 }
