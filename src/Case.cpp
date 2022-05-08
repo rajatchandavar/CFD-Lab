@@ -186,16 +186,15 @@ void Case::simulate() {
     double dt = _field.dt();
     int timestep = 0;
     double output_counter = 0.0;
-    double res;
-    int iter, n = 0;
+    double res; //Residual for Pressure SOR
+    int iter, n = 0; //Iteration for SOR and rank for vtk
 
     while(t < _t_end){
         
         dt = _field.calculate_dt(_grid);
         t = t + dt;
-        std::cout<<"dt "<<dt<<"\n";
-        _boundaries[0]->apply(_field);
-        _boundaries[1]->apply(_field);
+        _boundaries[0]->apply(_field); //Boundary conditions of moving wall applied to field
+        _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
 
         _field.calculate_fluxes(_grid);
         _field.calculate_rs(_grid);
@@ -207,13 +206,12 @@ void Case::simulate() {
             ++iter;
         }while(res > _tolerance && iter < _max_iter);
 
-        std::cout << "res "<<res << '\n';
+        std::cout << "Time = " << t << " Residual = "<< res << " dt = " << dt << '\n';
 
         _field.calculate_velocities(_grid);
         output_vtk(_output_freq, n);
         n = n + 1;
     }
-
 }
 
 void Case::output_vtk(int timestep, int my_rank) {

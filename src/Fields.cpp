@@ -14,6 +14,9 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
 }
 
+/********************************************************************************
+ * This function calculates fluxes F and G as mentioned in equation (9) and (10)
+ *******************************************************************************/
 void Fields::calculate_fluxes(Grid &grid) {
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
@@ -23,6 +26,9 @@ void Fields::calculate_fluxes(Grid &grid) {
     }
 }
 
+/********************************************************************************
+ * This function calculates the RHS of equation (11) i.e. Pressure SOR
+ *******************************************************************************/
 void Fields::calculate_rs(Grid &grid) {
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
@@ -32,6 +38,9 @@ void Fields::calculate_rs(Grid &grid) {
     }
 }
 
+/*****************************************************************************************
+ * This function updates velocity after Pressure SOR as mentioned in equation (7) and (8)
+ ****************************************************************************************/
 void Fields::calculate_velocities(Grid &grid) {
     for (auto currentCell : grid.fluid_cells()) {    
         int i = currentCell->i();
@@ -41,6 +50,9 @@ void Fields::calculate_velocities(Grid &grid) {
     }
 }
 
+/*****************************************************************************************
+ * This function calculate timestep for adaptive time stepping using equation (13)
+ ****************************************************************************************/
 double Fields::calculate_dt(Grid &grid) {
     double t1 = 1 / (2 * _nu * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
     //std::vector<double> u_max(grid.jmaxb(),0), v_max(grid.jmaxb(),0);
