@@ -191,7 +191,7 @@ void Case::simulate() {
 
     while(t < _t_end){
         
-        //dt = _field.calculate_dt(_grid);
+        dt = _field.calculate_dt(_grid);
         t = t + dt;
         _boundaries[0]->apply(_field); //Boundary conditions of moving wall applied to field
         _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
