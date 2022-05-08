@@ -206,7 +206,7 @@ void Case::simulate() {
             ++iter;
         }while(res > _tolerance && iter < _max_iter);
 
-        std::cout << "Time = " << t << " Residual = "<< res << " dt = " << dt << '\n';
+        std::cout << "Time = " << t << " Residual = "<< res << " Iter = " << iter << " dt = " << dt << '\n';
 
         _field.calculate_velocities(_grid);
         output_vtk(_output_freq, n);

@@ -55,29 +55,21 @@ void Fields::calculate_velocities(Grid &grid) {
  ****************************************************************************************/
 double Fields::calculate_dt(Grid &grid) {
     double t1 = 1 / (2 * _nu * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
-    //std::vector<double> u_max(grid.jmaxb(),0), v_max(grid.jmaxb(),0);
-    std::vector<double> u_max(grid.imaxb()*grid.jmaxb(),0), v_max(grid.imaxb()*grid.jmaxb(),0);
-    //std::vector<double> u_max{1,2,3},v_max{1,2,3};
-    //auto fn = [](auto &a, auto &b) {return abs(a) < abs(b);};
+    double u_max = 0, v_max = 0, temp;
     for (int i = 0; i < grid.imaxb(); ++i){
         for(int j=0;j<grid.jmaxb();++j)
         {
-        //std::cout<<"\n"<<*std::max_element(_U.get_row(1).begin(), _U.get_row(1).end(),fn);
-        //std::cout << std::abs(*std::max_element(_U.get_row(j).begin(), _U.get_row(j).end()));
-        //u_max.push_back(std::abs(*std::max_element(_U.get_row(j).begin(), _U.get_row(j).end(), fn)));
-        //v_max.push_back(std::abs(*std::max_element(_V.get_row(j).begin(), _V.get_row(j).end(), fn)));
-
-        u_max.push_back(std::abs(_U(i,j)));
-        v_max.push_back(std::abs(_V(i,j)));
+            temp = std::abs(_U(i,j));
+            if(temp > u_max){
+                u_max = temp;
+            }
+            temp = std::abs(_V(i,j));
+            if(temp > v_max){
+                v_max = temp;
+            }
         }
-
-    }
-
-    //std::cout << std::abs(*std::max_element(u_max.begin(), u_max.end()));
-    
-    double t2 = grid.dx() / *std::max_element(u_max.begin(), u_max.end());
-    double t3 = grid.dy() / *std::max_element(v_max.begin(), v_max.end());    
-    // double t2 = 0.1, t3 = 0.5;
+    double t2 = grid.dx() / u_max;
+    double t3 = grid.dy() / v_max;    
     _dt = _tau * std::min({t1, t2, t3});
     return _dt;
 }
