@@ -68,6 +68,7 @@ double Fields::calculate_dt(Grid &grid) {
                 v_max = temp;
             }
         }
+    }
     double t2 = grid.dx() / u_max;
     double t3 = grid.dy() / v_max;    
     _dt = _tau * std::min({t1, t2, t3});
