@@ -187,30 +187,40 @@ void Case::simulate() {
     int timestep = 0;
     double output_counter = 0.0;
     double res; //Residual for Pressure SOR
-    int iter, n = 0; //Iteration for SOR and rank for vtk
+    int iter, n = 0;
+
+    output_vtk(timestep);
 
     while(t < _t_end){
         
         dt = _field.calculate_dt(_grid);
         t = t + dt;
-        _boundaries[0]->apply(_field); //Boundary conditions of moving wall applied to field
+        ++timestep;
+        _boundaries[0]->apply(_field);//Boundary conditions of moving wall applied to field
         _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
 
         _field.calculate_fluxes(_grid);
-        _field.calculate_rs(_grid);
+        
+       _field.calculate_rs(_grid);
 
         iter = 0;
 
         do{
             res = _pressure_solver->solve(_field, _grid, _boundaries);
-            ++iter;
+            iter++;
         }while(res > _tolerance && iter < _max_iter);
 
-        std::cout << "Time = " << t << " Residual = "<< res << " Iter = " << iter << " dt = " << dt << '\n';
+        if (iter == _max_iter) {
+            std::cout << "Max iteration reached" << "\n";
+        }
+
+        std::cout << "Time = " << std::setw(6) << t << " Residual = "<< std::setw(12) << res <<
+        
+        " Iter = " << std::setw(6) << iter << " dt = " << std::setw(6) << dt << '\n';
 
         _field.calculate_velocities(_grid);
-        output_vtk(_output_freq, n);
-        n = n + 1;
+        output_vtk(timestep);
+
     }
 }
 
@@ -287,7 +297,7 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Create Filename
     std::string outputname =
-        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
+        _dict_name + '/' + _case_name + "_" + std::to_string(timestep) + ".vtk";
 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);

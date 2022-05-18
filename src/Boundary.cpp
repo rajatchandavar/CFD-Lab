@@ -21,7 +21,6 @@ void FixedWallBoundary::apply(Fields &field) {
             field.u(i, j) = -field.u(i, j + 1);
             field.v(i, j) = 0.0;
             field.p(i, j) = field.p(i, j + 1);
-            field.g(i, j) = field.v(i, j);
         }
 
         // Left Wall
@@ -29,18 +28,14 @@ void FixedWallBoundary::apply(Fields &field) {
             field.u(i, j) = 0.0;
             field.v(i, j) = -field.v(i + 1, j);
             field.p(i, j) = field.p(i + 1, j);
-            field.f(i, j) = field.u(i, j);
         }
 
         // Right Wall
         if(currentCell->is_border(border_position::LEFT)){
-            //not necessary but done for sanity
-            field.u(i, j) = 0.0; 
             //Since u grid is staggered, the u velocity of cells to left of ghost layer should be set to 0.
             field.u(i - 1, j) = 0.0; 
             field.v(i, j) = -field.v(i - 1, j);
             field.p(i, j) = field.p(i - 1, j);
-            field.f(i, j) = field.u(i, j);
         }
     }
 
@@ -64,11 +59,8 @@ void MovingWallBoundary::apply(Fields &field) {
         int i = currentCell->i();
         int j = currentCell->j();
         field.u(i, j) = 2 * _wall_velocity[8] - field.u(i, j-1);
-         //not necessary but done for sanity
-        field.v(i,j) = 0.0;
         //Since v grid is staggered, the v velocity of cells to below of ghost layer should be set to 0.
         field.v(i,j - 1) = 0.0;
         field.p(i,j) = field.p(i, j-1);
-        field.g(i,j) = field.v(i,j);
     }
 }

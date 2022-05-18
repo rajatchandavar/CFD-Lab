@@ -18,11 +18,35 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
  * This function calculates fluxes F and G as mentioned in equation (9) and (10)
  *******************************************************************************/
 void Fields::calculate_fluxes(Grid &grid) {
+    
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
         int j = currentCell->j();
-        _F(i,j) = _U(i,j) + _dt * (_nu*Discretization::diffusion(_U,i,j) - Discretization::convection_u(_U,_V,i,j) + _gx); 
+        _F(i,j) = _U(i,j) + _dt * (_nu*Discretization::diffusion(_U,i,j) - Discretization::convection_u(_U,_V,i,j) + _gx);
         _G(i,j) = _V(i,j) + _dt * (_nu*Discretization::diffusion(_V,i,j) - Discretization::convection_v(_U,_V,i,j) + _gy);
+    }
+
+    for (auto currentCell: grid.fixed_wall_cells()){
+
+        int i = currentCell->i();
+        int j = currentCell->j();
+
+        if(currentCell -> is_border(border_position::TOP))
+            _G(i,j) = _V(i,j);
+
+        if(currentCell -> is_border(border_position::LEFT))
+            _F(i - 1, j) = _U(i - 1, j);
+
+        if(currentCell -> is_border(border_position::RIGHT))
+            _F(i, j) = _U(i, j);
+    }
+
+    for (auto currentCell: grid.moving_wall_cells()){
+
+        int i = currentCell->i();
+        int j = currentCell->j();
+
+        _G(i,j - 1) = _V(i,j - 1);
     }
 }
 
@@ -42,11 +66,16 @@ void Fields::calculate_rs(Grid &grid) {
  * This function updates velocity after Pressure SOR as mentioned in equation (7) and (8)
  ****************************************************************************************/
 void Fields::calculate_velocities(Grid &grid) {
-    for (auto currentCell : grid.fluid_cells()) {    
-        int i = currentCell->i();
-        int j = currentCell->j();
-        _U(i, j) = _F(i, j) - (_dt/grid.dx())*(_P(i + 1, j) - _P(i, j));
-        _V(i, j) = _G(i, j) - (_dt/grid.dy())*(_P(i, j + 1) - _P(i, j));
+    for (int i = 1; i < grid.imax(); ++i ) {
+        for (int j = 1; j < grid.jmax() + 1; ++j){
+            _U(i, j) = _F(i, j) - (_dt/grid.dx()) * (_P(i + 1, j) - _P(i, j));           
+        }       
+    }
+
+    for (int i = 1; i < grid.imax() + 1; ++i ) {
+        for (int j = 1; j < grid.jmax(); ++j){
+            _V(i, j) = _G(i, j) - (_dt/grid.dy()) * (_P(i, j + 1) - _P(i, j));
+        }       
     }
 }
 
