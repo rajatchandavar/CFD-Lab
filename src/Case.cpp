@@ -236,9 +236,9 @@ void Case::simulate() {
             std::cout << "Max iteration reached" << "\n";
         }
 
-        std::cout << "Time = " << std::setw(6) << t << " Residual = "<< std::setw(12) << res <<
+        std::cout << "Time = " << std::setw(8) << t << " Residual = "<< std::setw(8) << res <<
         
-        " Iter = " << std::setw(6) << iter << " dt = " << std::setw(6) << dt << '\n';
+        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(8) << dt << '\n';
 
         _field.calculate_velocities(_grid);
         output_vtk(timestep);

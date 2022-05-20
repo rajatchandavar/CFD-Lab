@@ -51,6 +51,32 @@ void Fields::calculate_fluxes(Grid &grid) {
 
         if(currentCell -> is_border(border_position::RIGHT))
             _F(i, j) = _U(i, j);
+
+        // obstacles B_NE
+        if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::RIGHT)){
+            _F(i, j) = _U(i, j);
+            _G(i, j) = _V(i, j);
+        }
+
+        // obstacles B_SE
+        if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::RIGHT)){
+            _F(i, j) = _U(i, j);
+            _G(i,j - 1) = _V(i,j - 1);
+
+        }
+
+        // obstacles B_NW
+        if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::LEFT)){
+            _F(i - 1, j) = _U(i - 1, j);
+            _G(i, j) = _V(i, j);
+        }
+
+        // obstacles B_SW
+        if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::LEFT)){
+            _F(i - 1, j) = _U(i - 1, j);
+            _G(i, j - 1) = _V(i, j - 1);
+        }
+
     }
 
     for (auto currentCell: grid.moving_wall_cells()){

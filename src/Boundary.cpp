@@ -16,34 +16,70 @@ void FixedWallBoundary::apply(Fields &field) {
         int i = currentCell->i();
         int j = currentCell->j();
         
-        // Bottom Wall
+        // Bottom Wall B_N
         if(currentCell->is_border(border_position::TOP)){
             field.u(i, j) = -field.u(i, j + 1);
             field.v(i, j) = 0.0;
             field.p(i, j) = field.p(i, j + 1);
         }
 
-        // Top Wall
+        // obstacles B_NE
+        if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::RIGHT)){
+            field.u(i, j) = 0.0;
+            field.u(i - 1, j) = -field.u(i - 1, j + 1);
+            field.v(i, j) = 0.0;
+            field.v(i, j - 1) = -field.v(i + 1, j - 1);
+            field.p(i, j) = (field.p(i, j + 1) + field.p(i + 1, j))/2;
+        }
+
+        // Top Wall B_S
         if(currentCell->is_border(border_position::BOTTOM)){
             field.u(i, j) = -field.u(i, j - 1);
             field.v(i, j) = 0.0;
             field.p(i, j) = field.p(i, j - 1);
         }
 
-        // // Left Wall
-        // if(currentCell->is_border(border_position::RIGHT)){
-        //     field.u(i, j) = 0.0;
-        //     field.v(i, j) = -field.v(i + 1, j);
-        //     field.p(i, j) = field.p(i + 1, j);
-        // }
+        // obstacles B_SE
+        if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::RIGHT)){
+            field.u(i, j) = 0.0;
+            field.u(i - 1, j) = -field.u(i - 1, j - 1);
+            field.v(i, j - 1) = 0.0;
+            field.v(i, j) = -field.v(i + 1, j);
+            field.p(i, j) = (field.p(i + 1, j) + field.p(i, j - 1))/2;
+        }
 
-        // // Right Wall
-        // if(currentCell->is_border(border_position::LEFT)){
-        //     //Since u grid is staggered, the u velocity of cells to left of ghost layer should be set to 0.
-        //     field.u(i - 1, j) = 0.0; 
-        //     field.v(i, j) = -field.v(i - 1, j);
-        //     field.p(i, j) = field.p(i - 1, j);
-        // }
+        // Left Wall B_E
+        if(currentCell->is_border(border_position::RIGHT)){
+            field.u(i, j) = 0.0;
+            field.v(i, j) = -field.v(i + 1, j);
+            field.p(i, j) = field.p(i + 1, j);
+        }
+
+        // obstacle B_NW
+        if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::LEFT)){
+            field.u(i - 1, j) = 0.0;
+            field.u(i, j) = -field.u(i, j + 1);
+            field.v(i, j) = 0.0;
+            field.v(i, j - 1) = -field.v(i - 1, j - 1);
+            field.p(i,j) = (field.p(i - 1, j) + field.p(i, j + 1))/2;
+        }
+
+        // Right Wall B_W
+        if(currentCell->is_border(border_position::LEFT)){
+            //Since u grid is staggered, the u velocity of cells to left of ghost layer should be set to 0.
+            field.u(i - 1, j) = 0.0; 
+            field.v(i, j) = -field.v(i - 1, j);
+            field.p(i, j) = field.p(i - 1, j);
+        }
+        
+        // obstacle B_SW
+        if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::LEFT)){
+            field.u(i - 1, j) = 0.0;
+            field.u(i, j) = field.u(i, j - 1);
+            field.v(i, j - 1) = 0.0;
+            field.v(i, j) = -field.v(i - 1, j);
+            field.p(i, j) = (field.p(i - 1, j) + field.p(i, j - 1))/2;
+        }
     }
 
 }
