@@ -60,6 +60,22 @@ void Fields::calculate_fluxes(Grid &grid) {
 
         _G(i,j - 1) = _V(i,j - 1);
     }
+
+    for (auto currentCell: grid.inflow_cells()){
+
+        int i = currentCell->i();
+        int j = currentCell->j();
+
+        _F(i,j) = _U(i,j);
+    }
+
+    for (auto currentCell: grid.outflow_cells()){
+
+        int i = currentCell->i();
+        int j = currentCell->j();
+
+        _F(i - 1,j) = _U(i - 1,j);
+    }
 }
 
 /********************************************************************************
@@ -78,7 +94,7 @@ void Fields::calculate_rs(Grid &grid) {
  * This function updates velocity after Pressure SOR as mentioned in equation (7) and (8)
  ****************************************************************************************/
 void Fields::calculate_velocities(Grid &grid) {
-    for (int i = 1; i < grid.imax(); ++i ) {
+    for (int i = 1; i < grid.imax() + 1; ++i ) {
         for (int j = 1; j < grid.jmax() + 1; ++j){
             _U(i, j) = _F(i, j) - (_dt/grid.dx()) * (_P(i + 1, j) - _P(i, j));           
         }       

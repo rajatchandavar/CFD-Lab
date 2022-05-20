@@ -30,20 +30,20 @@ void FixedWallBoundary::apply(Fields &field) {
             field.p(i, j) = field.p(i, j - 1);
         }
 
-        // Left Wall
-        if(currentCell->is_border(border_position::RIGHT)){
-            field.u(i, j) = 0.0;
-            field.v(i, j) = -field.v(i + 1, j);
-            field.p(i, j) = field.p(i + 1, j);
-        }
+        // // Left Wall
+        // if(currentCell->is_border(border_position::RIGHT)){
+        //     field.u(i, j) = 0.0;
+        //     field.v(i, j) = -field.v(i + 1, j);
+        //     field.p(i, j) = field.p(i + 1, j);
+        // }
 
-        // Right Wall
-        if(currentCell->is_border(border_position::LEFT)){
-            //Since u grid is staggered, the u velocity of cells to left of ghost layer should be set to 0.
-            field.u(i - 1, j) = 0.0; 
-            field.v(i, j) = -field.v(i - 1, j);
-            field.p(i, j) = field.p(i - 1, j);
-        }
+        // // Right Wall
+        // if(currentCell->is_border(border_position::LEFT)){
+        //     //Since u grid is staggered, the u velocity of cells to left of ghost layer should be set to 0.
+        //     field.u(i - 1, j) = 0.0; 
+        //     field.v(i, j) = -field.v(i - 1, j);
+        //     field.p(i, j) = field.p(i - 1, j);
+        // }
     }
 
 }
@@ -107,5 +107,7 @@ void OutFlowBoundary::apply(Fields &field) {
             field.u(i,j) = field.u(i - 1,j);
             field.v(i,j) = field.v(i - 1,j);
             field.p(i,j) = 2 * _POUT[2] - field.p(i - 1, j);
+            // field.p(i,j) = -8 - field.p(i - 1, j);
+
     }
 }

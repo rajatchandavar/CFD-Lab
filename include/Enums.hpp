@@ -15,7 +15,7 @@ const int moving_wall_id = 8;
 const int fixed_wall_id = 4;
 const int inflow_id = 1;
 const int outflow_id = 2;
-const double POUT = 0.0;
+const double POUT = -4.0;
 }
 
 enum class border_position {

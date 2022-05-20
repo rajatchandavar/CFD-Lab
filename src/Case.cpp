@@ -215,14 +215,15 @@ void Case::simulate() {
         t = t + dt;
         ++timestep;
 
-        _boundaries[2]->apply(_field); //Boundary conditions of moving wall applied to field
+        
        // _boundaries[3]->apply(_field);
         _boundaries[0]->apply(_field);//Boundary conditions of moving wall applied to field
         _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
+        _boundaries[2]->apply(_field);
 
         _field.calculate_fluxes(_grid);
         
-       _field.calculate_rs(_grid);
+        _field.calculate_rs(_grid);
 
         iter = 0;
 
