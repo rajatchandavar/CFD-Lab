@@ -48,6 +48,10 @@ Case::Case(std::string file_name, int argn, char **args) {
     int itermax;    /* max. number of iterations for pressure per time step */
     double eps;     /* accuracy bound for pressure*/
 
+    double UIN;
+    double VIN;
+    int num_of_walls;
+
     if (file.is_open()) {
 
         std::string var;
@@ -74,6 +78,10 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "itermax") file >> itermax;
                 if (var == "imax") file >> imax;
                 if (var == "jmax") file >> jmax;
+                if (var == "UIN") file >> UIN;
+                if (var == "VIN") file >> VIN;
+                if (var == "geo_file") file >> _geom_name;
+                if (var == "num_of_walls") file >> num_of_walls;
             }
         }
     }
