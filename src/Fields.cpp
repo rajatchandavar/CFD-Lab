@@ -43,6 +43,9 @@ void Fields::calculate_fluxes(Grid &grid) {
         if(currentCell -> is_border(border_position::TOP))
             _G(i,j) = _V(i,j);
 
+        if(currentCell -> is_border(border_position::BOTTOM))
+            _G(i,j - 1) = _V(i,j - 1);
+
         if(currentCell -> is_border(border_position::LEFT))
             _F(i - 1, j) = _U(i - 1, j);
 

@@ -116,15 +116,19 @@ Case::Case(std::string file_name, int argn, char **args) {
     if (not _grid.moving_wall_cells().empty()) {
         _boundaries.push_back(
             std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
+            std::cout << "moving wall puashed" << "\n";
     }
     if (not _grid.fixed_wall_cells().empty()) {
         _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+        std::cout << "fixed wall puashed" << "\n";
     }
     if (not _grid.inflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<InFlowBoundary>(_grid.inflow_cells(), UIN, VIN));
+        std::cout << "inflow wall puashed" << "\n";
     }
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutFlowBoundary>(_grid.outflow_cells(), GEOMETRY_PGM::POUT));
+        std::cout << "outflow wall puashed" << "\n";
     }
 }
 
@@ -210,6 +214,9 @@ void Case::simulate() {
         dt = _field.calculate_dt(_grid);
         t = t + dt;
         ++timestep;
+
+        _boundaries[2]->apply(_field); //Boundary conditions of moving wall applied to field
+       // _boundaries[3]->apply(_field);
         _boundaries[0]->apply(_field);//Boundary conditions of moving wall applied to field
         _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
 
