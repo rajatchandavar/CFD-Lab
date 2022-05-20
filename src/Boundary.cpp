@@ -64,3 +64,22 @@ void MovingWallBoundary::apply(Fields &field) {
         field.p(i,j) = field.p(i, j-1);
     }
 }
+
+void InFlowBoundary::apply(Fields &field) {
+    for (auto currentCell: _cells){
+        int i = currentCell->i();
+        int j = currentCell->j();
+            field.u(i,j) = _UIN[1];
+            field.v(i,j) = _VIN[1];
+            field.p(i,j) = field.p(i + 1, j);
+    }
+}
+
+void OutFlowBoundary::apply(Fields &field) {
+    for (auto currentCell: _cells){
+        int i = currentCell->i();
+        int j = currentCell->j();
+
+            field.p(i,j) = _POUT;
+    }
+}

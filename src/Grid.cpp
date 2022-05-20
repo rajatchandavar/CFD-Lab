@@ -274,3 +274,7 @@ const std::vector<Cell *> &Grid::fluid_cells() const { return _fluid_cells; }
 const std::vector<Cell *> &Grid::fixed_wall_cells() const { return _fixed_wall_cells; }
 
 const std::vector<Cell *> &Grid::moving_wall_cells() const { return _moving_wall_cells; }
+
+const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
+
+const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }
