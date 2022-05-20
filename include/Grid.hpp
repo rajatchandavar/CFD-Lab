@@ -90,6 +90,9 @@ class Grid {
     std::vector<Cell *> _fixed_wall_cells;
     std::vector<Cell *> _moving_wall_cells;
 
+    std::vector<Cell *> _inflow_cells;
+    std::vector<Cell *> _outflow_cells;
+
     Domain _domain;
 
     double _dx;

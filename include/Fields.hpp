@@ -25,7 +25,7 @@ class Fields {
      * @param[in] initial pressure
      *
      */
-    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI);
+    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI, const Grid &grid);
 
     /**
      * @brief Calculates the convective and diffusive fluxes in x and y
