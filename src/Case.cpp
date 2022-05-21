@@ -241,9 +241,12 @@ void Case::simulate() {
         " Iter = " << std::setw(8) << iter << " dt = " << std::setw(8) << dt << '\n';
 
         _field.calculate_velocities(_grid);
+
         output_vtk(timestep);
 
     }
+
+    std::cout << _field.u(11,9) << '\n' << _field.u(10,8) << '\n';
 }
 
 void Case::output_vtk(int timestep, int my_rank) {

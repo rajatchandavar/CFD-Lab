@@ -120,16 +120,28 @@ void Fields::calculate_rs(Grid &grid) {
  * This function updates velocity after Pressure SOR as mentioned in equation (7) and (8)
  ****************************************************************************************/
 void Fields::calculate_velocities(Grid &grid) {
-    for (int i = 1; i < grid.imax() + 1; ++i ) {
-        for (int j = 1; j < grid.jmax() + 1; ++j){
-            _U(i, j) = _F(i, j) - (_dt/grid.dx()) * (_P(i + 1, j) - _P(i, j));           
-        }       
-    }
 
-    for (int i = 1; i < grid.imax() + 1; ++i ) {
-        for (int j = 1; j < grid.jmax(); ++j){
+    // for (int i = 1; i < grid.imax() + 1; ++i ) {
+    //     for (int j = 1; j < grid.jmax() + 1; ++j){
+    //         _U(i, j) = _F(i, j) - (_dt/grid.dx()) * (_P(i + 1, j) - _P(i, j));           
+    //     }       
+    // }
+
+    // for (int i = 1; i < grid.imax() + 1; ++i ) {
+    //     for (int j = 1; j < grid.jmax(); ++j){
+    //         _V(i, j) = _G(i, j) - (_dt/grid.dy()) * (_P(i, j + 1) - _P(i, j));
+    //     }       
+    // }
+
+    for (auto currentCell : grid.fluid_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+        if ((currentCell->neighbour(border_position::RIGHT)->type() == cell_type::FLUID) || (currentCell->neighbour(border_position::RIGHT)->type() == cell_type::OUTFLOW)) {
+            _U(i, j) = _F(i, j) - (_dt/grid.dx()) * (_P(i + 1, j) - _P(i, j));           
+        }
+        if ((currentCell->neighbour(border_position::TOP)->type() == cell_type::FLUID) || (currentCell->neighbour(border_position::RIGHT)->type() == cell_type::OUTFLOW)) {
             _V(i, j) = _G(i, j) - (_dt/grid.dy()) * (_P(i, j + 1) - _P(i, j));
-        }       
+        }
     }
 }
 
