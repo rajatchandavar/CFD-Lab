@@ -116,19 +116,15 @@ Case::Case(std::string file_name, int argn, char **args) {
     if (not _grid.moving_wall_cells().empty()) {
         _boundaries.push_back(
             std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
-            std::cout << "moving wall puashed" << "\n";
     }
     if (not _grid.fixed_wall_cells().empty()) {
         _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
-        std::cout << "fixed wall puashed" << "\n";
     }
     if (not _grid.inflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<InFlowBoundary>(_grid.inflow_cells(), UIN, VIN));
-        std::cout << "inflow wall puashed" << "\n";
     }
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutFlowBoundary>(_grid.outflow_cells(), GEOMETRY_PGM::POUT));
-        std::cout << "outflow wall puashed" << "\n";
     }
 }
 
@@ -228,6 +224,7 @@ void Case::simulate() {
         iter = 0;
 
         do{
+            _boundaries[0]->apply(_field);
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             iter++;
         }while(res > _tolerance && iter < _max_iter);
@@ -246,7 +243,6 @@ void Case::simulate() {
 
     }
 
-    std::cout << _field.u(11,9) << '\n' << _field.u(10,8) << '\n';
 }
 
 void Case::output_vtk(int timestep, int my_rank) {
