@@ -55,7 +55,12 @@ Case::Case(std::string file_name, int argn, char **args) {
     double TI;
     double beta;
     double alpha;
-    // std::vector<double, num_of_walls> wall_temp; // first element adiabatic, second 
+
+   
+   double wall_temp_a; // a is adiabatic(5)
+   double wall_temp_h; // h is hot wall (6)
+   double wall_temp_c; // c is cold wall (7)
+    
 
     if (file.is_open()) {
 
@@ -87,16 +92,20 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "VIN") file >> VIN;
                 if (var == "geo_file") file >> _geom_name;
                 if (var == "num_of_walls") file >> num_of_walls;
+                if (var=="wall_temp_5") file>>wall_temp_a;
+                if (var=="wall_temp_6") file>>wall_temp_h;
+                if (var=="wall_temp_7") file>>wall_temp_c;
                 if (var == "TI") file >> TI;
                 if (var == "beta") file >> beta;
                 if (var == "alpha") file >> alpha;
+                
             }
         }
     }
+    
     file.close();
-
-    std::vector<double> wall_temp(num_of_walls);
-
+    
+    
     std::map<int, double> wall_vel;
     if (_geom_name.compare("NONE") == 0) {
         wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
@@ -115,7 +124,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     build_domain(domain, imax, jmax);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, _grid);
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta); 
 
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
