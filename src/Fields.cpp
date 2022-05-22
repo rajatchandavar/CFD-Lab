@@ -40,17 +40,7 @@ void Fields::calculate_fluxes(Grid &grid) {
         int i = currentCell->i();
         int j = currentCell->j();
 
-        if(currentCell -> is_border(border_position::TOP))
-            _G(i,j) = _V(i,j);
-
-        if(currentCell -> is_border(border_position::BOTTOM))
-            _G(i,j - 1) = _V(i,j - 1);
-
-        if(currentCell -> is_border(border_position::LEFT))
-            _F(i - 1, j) = _U(i - 1, j);
-
-        if(currentCell -> is_border(border_position::RIGHT))
-            _F(i, j) = _U(i, j);
+        
 
         // obstacles B_NE
         if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::RIGHT)){
@@ -59,23 +49,34 @@ void Fields::calculate_fluxes(Grid &grid) {
         }
 
         // obstacles B_SE
-        if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::RIGHT)){
+       else if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::RIGHT)){
             _F(i, j) = _U(i, j);
             _G(i,j - 1) = _V(i,j - 1);
 
         }
 
         // obstacles B_NW
-        if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::LEFT)){
+        else if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::LEFT)){
             _F(i - 1, j) = _U(i - 1, j);
             _G(i, j) = _V(i, j);
         }
 
         // obstacles B_SW
-        if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::LEFT)){
+        else if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::LEFT)){
             _F(i - 1, j) = _U(i - 1, j);
             _G(i, j - 1) = _V(i, j - 1);
         }
+        else if(currentCell -> is_border(border_position::TOP))
+            _G(i,j) = _V(i,j);
+
+        else if(currentCell -> is_border(border_position::BOTTOM))
+            _G(i,j - 1) = _V(i,j - 1);
+
+        else if(currentCell -> is_border(border_position::LEFT))
+            _F(i - 1, j) = _U(i - 1, j);
+
+        else if(currentCell -> is_border(border_position::RIGHT))
+            _F(i, j) = _U(i, j);
 
     }
 

@@ -286,6 +286,18 @@ void Case::output_vtk(int timestep, int my_rank) {
     Velocity->SetName("velocity");
     Velocity->SetNumberOfComponents(3);
 
+        for (auto currentCell: _grid.fixed_wall_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+        if (i != 0 && j != 0){
+            _field.u(i,j) = 0.0;
+            _field.v(i,j) = 0.0;
+            _field.u(i - 1,j) = 0.0;
+            _field.v(i,j - 1) = 0.0;
+            _field.p(i,j) = 0.0;
+        }
+    }
+
     // Print pressure and temperature from bottom to top
     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
         for (int i = 1; i < _grid.domain().size_x + 1; i++) {
