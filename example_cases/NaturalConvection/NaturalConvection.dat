@@ -80,7 +80,7 @@ alpha        0.000142857
 #--------------------------------------------
 num_walls    3
 
-wall_temp_3  0.0
-wall_temp_4  1.0
-wall_temp_5  -1  
+wall_temp_5  -1
+wall_temp_6  1.0
+wall_temp_7  0.0 
 
