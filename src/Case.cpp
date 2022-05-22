@@ -55,7 +55,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     double TI;
     double beta;
     double alpha;
-    std::vector<double, num_of_walls> wall_temp; // first element adiabatic, second 
+    // std::vector<double, num_of_walls> wall_temp; // first element adiabatic, second 
 
     if (file.is_open()) {
 
@@ -95,9 +95,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     file.close();
 
-    std::vector<double, num_of_walls> wall_temp;
-
-    if(GEOMETRY_PGM::)
+    std::vector<double> wall_temp(num_of_walls);
 
     std::map<int, double> wall_vel;
     if (_geom_name.compare("NONE") == 0) {
@@ -237,6 +235,8 @@ void Case::simulate() {
 
         do{
             _boundaries[0]->apply(_field);
+            _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
+            _boundaries[2]->apply(_field);
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             iter++;
         }while(res > _tolerance && iter < _max_iter);
