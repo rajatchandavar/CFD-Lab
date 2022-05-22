@@ -172,6 +172,31 @@ double Fields::calculate_dt(Grid &grid) {
     return _dt;
 }
 
+
+void Fields::calculate_temperatures(Grid &grid)
+{
+    double imaxb = grid.imaxb();
+    double jmaxb = grid.jmaxb();
+    Matrix<double> T_temp(imaxb, jmaxb, 0);
+    for(auto i = 0; i < imaxb; i++)
+    {
+        for(auto j = 0; j < jmaxb; j++)
+        {
+            T_temp(i,j) = _T(i,j);
+        }
+    }
+
+
+    for(auto currentCell: grid.fluid_cells())
+    {
+        int i = currentCell->i();
+        int j = currentCell->j();
+        _T(i,j) = _dt * (_alpha * Discretization::diffusion(T_temp,i,j) - Discretization::convection_Tu(T_temp,_U,i,j) - Discretization::convection_Tv(T_temp,_V,i,j)) + T_temp(i,j);
+        
+    }
+    
+}
+
 double &Fields::p(int i, int j) { return _P(i, j); }
 double &Fields::u(int i, int j) { return _U(i, j); }
 double &Fields::v(int i, int j) { return _V(i, j); }

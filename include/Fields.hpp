@@ -62,7 +62,7 @@ class Fields {
      * @param[in] grid in which the calculations are done
      *
      */
-    void calculate_temperature(Grid &grid);
+    void calculate_temperatures(Grid &grid);
 
     /**
      * @brief Adaptive step size calculation using x-velocity condition,

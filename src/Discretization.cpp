@@ -56,6 +56,23 @@ double Discretization::diffusion(const Matrix<double> &A, int i, int j) {
     return result;
 }
 
+double Discretization::convection_Tu(const Matrix<double> &T, const Matrix<double> &U, int i, int j)
+{
+    double result;
+    result = 1/_dx * ( U(i, j) * (T(i, j) + T(i + 1, j)) / 2 - U(i - 1,j) * (T(i - 1, j) + T(i, j)) / 2 ) + 
+                        _gamma/_dx * ( std::abs(U(i,j)) * (T(i, j) - T(i + 1, j)) / 2 - std::abs(U(i - 1,j)) * (T(i - 1, j) - T(i, j)) / 2 );
+    return result;
+}
+
+double Discretization::convection_Tv(const Matrix<double> &T, const Matrix<double> &V, int i, int j)
+{
+    double result;
+    result = 1/_dy * ( V(i, j) * (T(i, j) + T(i , j + 1)) / 2 - V(i,j - 1) * (T(i, j - 1) + T(i, j)) / 2 ) + 
+                        _gamma/_dy * ( std::abs(V(i,j)) * (T(i, j) - T(i, j + 1)) / 2 - std::abs(V(i,j - 1)) * (T(i, j - 1) - T(i, j))/2 );
+    return result;
+}
+
+
 double Discretization::laplacian(const Matrix<double> &P, int i, int j) {
     double result = (P(i + 1, j) - 2.0 * P(i, j) + P(i - 1, j)) / (_dx * _dx) +
                     (P(i, j + 1) - 2.0 * P(i, j) + P(i, j - 1)) / (_dy * _dy);
@@ -66,5 +83,10 @@ double Discretization::sor_helper(const Matrix<double> &P, int i, int j) {
     double result = (P(i + 1, j) + P(i - 1, j)) / (_dx * _dx) + (P(i, j + 1) + P(i, j - 1)) / (_dy * _dy);
     return result;
 }
+
+
+
+
+
 
 double Discretization::interpolate(const Matrix<double> &A, int i, int j, int i_offset, int j_offset) {}
