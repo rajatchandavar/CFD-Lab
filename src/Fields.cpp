@@ -3,13 +3,13 @@
 #include <algorithm>
 #include <iostream>
 
-Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, const Grid &grid, double alpha)
-    : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha) {
+Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double alpha, double beta)
+    : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha), _beta(beta) {
 
     _U = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _V = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _P = Matrix<double>(imax + 2, jmax + 2, 0.0);
-
+    _T = Matrix<double>(imax + 2, jmax + 2, TI);
     _F = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);

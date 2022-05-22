@@ -23,9 +23,12 @@ class Fields {
      * @param[in] initial x-velocity
      * @param[in] initial y-velocity
      * @param[in] initial pressure
+     * @param[in] initial temperature
+     * @param[in] thermal diffusivity - alpha
+     * @param[in] thermal expansion co-efficient - beta
      *
      */
-    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI, const Grid &grid, double _alpha);
+    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double _alpha, double _beta);
 
     /**
      * @brief Calculates the convective and diffusive fluxes in x and y
@@ -54,6 +57,14 @@ class Fields {
     void calculate_velocities(Grid &grid);
 
     /**
+     * @brief Temperature calculation 
+     *
+     * @param[in] grid in which the calculations are done
+     *
+     */
+    void calculate_temperature(Grid &grid);
+
+    /**
      * @brief Adaptive step size calculation using x-velocity condition,
      * y-velocity condition and CFL condition
      *
@@ -70,6 +81,9 @@ class Fields {
 
     /// pressure index based access and modify
     double &p(int i, int j);
+
+    /// temperature index based access and modify
+    double &t(int i, int j);
 
     /// RHS index based access and modify
     double &rs(int i, int j);
@@ -99,6 +113,8 @@ class Fields {
     Matrix<double> _G;
     /// right hand side matrix
     Matrix<double> _RS;
+    // Temperature Matrix
+    Matrix<double> _T;
 
     /// kinematic viscosity
     double _nu;
@@ -112,4 +128,6 @@ class Fields {
     double _tau;
     /// thermal diffusivity alpha
     double _alpha;
+    /// thermal expansion co-efficient
+    double _beta;
 };
