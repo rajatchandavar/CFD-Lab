@@ -53,17 +53,17 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
                 _cells(i, j) = Cell(i, j, cell_type::FLUID);
                 _fluid_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == LidDrivenCavity::moving_wall_id || geometry_data.at(i_geom).at(j_geom) == 8) {
+            } else if (geometry_data.at(i_geom).at(j_geom) == LidDrivenCavity::moving_wall_id || geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::moving_wall_id) {
                 _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data.at(i_geom).at(j_geom));
                 _moving_wall_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == 1) {
+            } else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::inflow_id) {
                 _cells(i, j) = Cell(i, j, cell_type::INFLOW, geometry_data.at(i_geom).at(j_geom));
                 _inflow_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == 2) {
+            } else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::outflow_id) {
                 _cells(i, j) = Cell(i, j, cell_type::OUTFLOW, geometry_data.at(i_geom).at(j_geom));
                 _outflow_cells.push_back(&_cells(i, j));
             }      
-              else if (geometry_data.at(i_geom).at(j_geom) == 3) {
+              else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::fixed_wall_id) {
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                 _fixed_wall_cells.push_back(&_cells(i, j));
             }        

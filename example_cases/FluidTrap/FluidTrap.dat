@@ -82,7 +82,7 @@ alpha        0.00001429
 # wall_temp<num>    wall temperature
 # - enter -1 for adiabatic wall
 #--------------------------------------------
-num_walls    3
+num_of_walls    3
 wall_temp_3  -1
 wall_temp_4  0.5
 wall_temp_5  -0.5

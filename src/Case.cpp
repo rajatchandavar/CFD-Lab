@@ -52,6 +52,11 @@ Case::Case(std::string file_name, int argn, char **args) {
     double VIN;
     int num_of_walls;
 
+    double TI;
+    double beta;
+    double alpha;
+    std::vector<double, num_of_walls> wall_temp; // first element adiabatic, second 
+
     if (file.is_open()) {
 
         std::string var;
@@ -82,10 +87,17 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "VIN") file >> VIN;
                 if (var == "geo_file") file >> _geom_name;
                 if (var == "num_of_walls") file >> num_of_walls;
+                if (var == "TI") file >> TI;
+                if (var == "beta") file >> beta;
+                if (var == "alpha") file >> alpha;
             }
         }
     }
     file.close();
+
+    std::vector<double, num_of_walls> wall_temp;
+
+    if(GEOMETRY_PGM::)
 
     std::map<int, double> wall_vel;
     if (_geom_name.compare("NONE") == 0) {
@@ -285,7 +297,7 @@ void Case::output_vtk(int timestep, int my_rank) {
     vtkDoubleArray *Velocity = vtkDoubleArray::New();
     Velocity->SetName("velocity");
     Velocity->SetNumberOfComponents(3);
-
+/*
         for (auto currentCell: _grid.fixed_wall_cells()){
         int i = currentCell->i();
         int j = currentCell->j();
@@ -297,7 +309,7 @@ void Case::output_vtk(int timestep, int my_rank) {
             _field.p(i,j) = 0.0;
         }
     }
-
+*/
     // Print pressure and temperature from bottom to top
     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
         for (int i = 1; i < _grid.domain().size_x + 1; i++) {

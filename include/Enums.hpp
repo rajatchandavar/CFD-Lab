@@ -11,11 +11,15 @@ const double wall_velocity = 1.0;
 } // namespace LidDrivenCavity
 
 namespace GEOMETRY_PGM {
-const int moving_wall_id = 8;
-const int fixed_wall_id = 4;
+const int moving_wall_id = 4;
+const int fixed_wall_id = 3;
 const int inflow_id = 1;
 const int outflow_id = 2;
 const double POUT = 0.0;
+
+const int adiabatic_id = 5;
+const int hot_id = 6;
+const int cold_id = 7; 
 }
 
 enum class border_position {
