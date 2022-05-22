@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <iostream>
 
-Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, const Grid &grid)
-    : _nu(nu), _dt(dt), _tau(tau) {
+Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, const Grid &grid, double alpha)
+    : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha) {
 
     _U = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _V = Matrix<double>(imax + 2, jmax + 2, 0.0);
@@ -166,8 +166,9 @@ double Fields::calculate_dt(Grid &grid) {
         }
     }
     double t2 = grid.dx() / u_max;
-    double t3 = grid.dy() / v_max;    
-    _dt = _tau * std::min({t1, t2, t3});
+    double t3 = grid.dy() / v_max;   
+    double t4 = 1 / (2 * _alpha * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
+    _dt = _tau * std::min({t1, t2, t3, t4});
     return _dt;
 }
 
