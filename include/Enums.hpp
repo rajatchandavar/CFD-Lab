@@ -11,7 +11,7 @@ const double wall_velocity = 1.0;
 } // namespace LidDrivenCavity
 
 namespace GEOMETRY_PGM {
-const int moving_wall_id = 4;
+const int moving_wall_id = 8; //change to 8
 const int fixed_wall_id = 3;
 const int inflow_id = 1;
 const int outflow_id = 2;
