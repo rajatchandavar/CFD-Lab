@@ -3,16 +3,19 @@
 #include <algorithm>
 #include <iostream>
 
-Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double alpha, double beta)
-    : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha), _beta(beta) {
+Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double alpha, double beta, bool isHeatTransfer)
+    : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha), _beta(beta), _isHeatTransfer(isHeatTransfer) {
 
     _U = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _V = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _P = Matrix<double>(imax + 2, jmax + 2, 0.0);
-    _T = Matrix<double>(imax + 2, jmax + 2, TI);
     _F = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
+
+    if (_isHeatTransfer){
+        _T = Matrix<double>(imax + 2, jmax + 2, TI);
+    }
 
     for (auto currentCell : grid.fluid_cells()){
         int i = currentCell->i();
@@ -35,12 +38,19 @@ void Fields::calculate_fluxes(Grid &grid) {
         _G(i,j) = _V(i,j) + _dt * (_nu*Discretization::diffusion(_V,i,j) - Discretization::convection_v(_U,_V,i,j) + _gy);
     }
 
+    if(_isHeatTransfer){
+        for (auto currentCell : grid.fluid_cells()) {
+            int i = currentCell->i();
+            int j = currentCell->j();
+            _F(i,j) = _F(i,j) - _beta * _dt / 2.0 * (_T(i,j) + _T(i + 1, j)) * _gx - _dt * _gx;
+            _G(i,j) = _G(i,j) - _beta * _dt / 2.0 * (_T(i,j) + _T(i, j + 1)) * _gy - _dt * _gy;
+        }
+    }
+
     for (auto currentCell: grid.fixed_wall_cells()){
 
         int i = currentCell->i();
         int j = currentCell->j();
-
-        
 
         // obstacles B_NE
         if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::RIGHT)){
@@ -203,7 +213,10 @@ double &Fields::v(int i, int j) { return _V(i, j); }
 double &Fields::f(int i, int j) { return _F(i, j); }
 double &Fields::g(int i, int j) { return _G(i, j); }
 double &Fields::rs(int i, int j) { return _RS(i, j); }
+double &Fields::t(int i, int j) { return _T(i,j);}
 
 Matrix<double> &Fields::p_matrix() { return _P; }
+
+bool Fields::isHeatTransfer() { return _isHeatTransfer;}
 
 double Fields::dt() const { return _dt; }

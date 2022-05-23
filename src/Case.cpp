@@ -61,7 +61,7 @@ Case::Case(std::string file_name, int argn, char **args) {
    double wall_temp_h; // h is hot wall (6)
    double wall_temp_c; // c is cold wall (7)
     
-
+    std::vector<double> wall_temp;
     if (file.is_open()) {
 
         std::string var;
@@ -92,9 +92,9 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "VIN") file >> VIN;
                 if (var == "geo_file") file >> _geom_name;
                 if (var == "num_of_walls") file >> num_of_walls;
-                if (var=="wall_temp_5") file>>wall_temp_a;
-                if (var=="wall_temp_6") file>>wall_temp_h;
-                if (var=="wall_temp_7") file>>wall_temp_c;
+                if (var=="wall_temp_5") {file>>wall_temp_a; wall_temp.push_back(wall_temp_a);}
+                if (var=="wall_temp_6") {file>>wall_temp_h; wall_temp.push_back(wall_temp_h);}
+                if (var=="wall_temp_7") {file>>wall_temp_c; wall_temp.push_back(wall_temp_c);}
                 if (var == "TI") file >> TI;
                 if (var == "beta") file >> beta;
                 if (var == "alpha") file >> alpha;
@@ -104,8 +104,11 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     
     file.close();
-    
-    
+
+    bool isHeatTransfer = true;
+    if (wall_temp.empty())
+        isHeatTransfer = false;
+      
     std::map<int, double> wall_vel;
     if (_geom_name.compare("NONE") == 0) {
         wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
@@ -124,7 +127,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     build_domain(domain, imax, jmax);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta); 
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer); 
 
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
@@ -236,9 +239,13 @@ void Case::simulate() {
         _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
         _boundaries[2]->apply(_field);
 
+
+        _field.calculate_temperatures(_grid);
+
         _field.calculate_fluxes(_grid);
         
         _field.calculate_rs(_grid);
+
 
         iter = 0;
 
