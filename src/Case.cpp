@@ -105,14 +105,20 @@ Case::Case(std::string file_name, int argn, char **args) {
     
     file.close();
 
-    bool isHeatTransfer = true;
-    if (wall_temp.empty())
-        isHeatTransfer = false;
+    bool isHeatTransfer = false;
+    std::map<int, double> wall_temp_a_map, wall_temp_h_map, wall_temp_c_map;
+    if (!wall_temp.empty()){
+        isHeatTransfer = true;
+        wall_temp_a_map.insert(std::pair<int, double>(GEOMETRY_PGM::adiabatic_id, wall_temp_a));
+        wall_temp_h_map.insert(std::pair<int, double>(GEOMETRY_PGM::hot_id, wall_temp_h));
+        wall_temp_c_map.insert(std::pair<int, double>(GEOMETRY_PGM::cold_id, wall_temp_c));
+    }
       
     std::map<int, double> wall_vel;
     if (_geom_name.compare("NONE") == 0) {
         wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
     }
+
 
     // Set file names for geometry file and output directory
     set_file_names(file_name);
