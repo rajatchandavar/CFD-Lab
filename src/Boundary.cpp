@@ -12,6 +12,8 @@ FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, do
  ****************************************************************************************/
 void FixedWallBoundary::apply(Fields &field) {
 
+   // std::cout << " in fixed wall  " << "\n";
+
     for (auto currentCell: _cells){
         int i = currentCell->i();
         int j = currentCell->j();
@@ -23,7 +25,7 @@ void FixedWallBoundary::apply(Fields &field) {
             field.v(i, j) = 0.0;
             field.v(i, j - 1) = -field.v(i + 1, j - 1);
             field.p(i, j) = (field.p(i, j + 1) + field.p(i + 1, j))/2;
-            if (field.isHeatTransfer()){
+            if (field.isHeatTransfer() && currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id ){
                 field.t(i, j) = (field.t(i, j + 1) + field.t(i + 1, j))/2;
             }
         }
@@ -35,7 +37,7 @@ void FixedWallBoundary::apply(Fields &field) {
             field.v(i, j - 1) = 0.0;
             field.v(i, j) = -field.v(i + 1, j);
             field.p(i, j) = (field.p(i + 1, j) + field.p(i, j - 1))/2;
-            if (field.isHeatTransfer()){
+            if (field.isHeatTransfer() && currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id){
                 field.t(i, j) = (field.t(i + 1, j) + field.t(i, j - 1))/2;
             }
         }
@@ -47,7 +49,7 @@ void FixedWallBoundary::apply(Fields &field) {
             field.v(i, j) = 0.0;
             field.v(i, j - 1) = -field.v(i - 1, j - 1);
             field.p(i,j) = (field.p(i - 1, j) + field.p(i, j + 1))/2;
-            if (field.isHeatTransfer()){
+            if (field.isHeatTransfer() && currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id){
                 field.t(i,j) = (field.t(i - 1, j) + field.t(i, j + 1))/2;
             }
         }
@@ -59,7 +61,7 @@ void FixedWallBoundary::apply(Fields &field) {
             field.v(i, j - 1) = 0.0;
             field.v(i, j) = -field.v(i - 1, j);
             field.p(i, j) = (field.p(i - 1, j) + field.p(i, j - 1))/2;
-            if (field.isHeatTransfer()){
+            if (field.isHeatTransfer() && currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id){
                 field.t(i, j) = (field.t(i - 1, j) + field.t(i, j - 1))/2;
             }
         }
@@ -69,6 +71,17 @@ void FixedWallBoundary::apply(Fields &field) {
             field.u(i, j) = -field.u(i, j + 1);
             field.v(i, j) = 0.0;
             field.p(i, j) = field.p(i, j + 1);
+
+            if(field.isHeatTransfer()){
+                int id = _wall_temperature.begin()->first;
+                double wall_temp = _wall_temperature.begin()->second;
+                if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
+                    field.t(i, j) = field.t(i, j + 1);
+                else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
+                    field.t(i, j) = 2*wall_temp - field.t(i, j + 1);
+                else if (currentCell->wall_id() == GEOMETRY_PGM::cold_id && id == GEOMETRY_PGM::cold_id)
+                    field.t(i, j) = 2*wall_temp - field.t(i, j + 1);
+            }
         }
 
         
@@ -78,6 +91,17 @@ void FixedWallBoundary::apply(Fields &field) {
             field.u(i, j) = -field.u(i, j - 1);
             field.v(i, j) = 0.0;
             field.p(i, j) = field.p(i, j - 1);
+
+            if(field.isHeatTransfer()){
+                int id = _wall_temperature.begin()->first;
+                double wall_temp = _wall_temperature.begin()->second;
+                if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
+                    field.t(i, j) = field.t(i, j - 1);
+                else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
+                    field.t(i, j) = 2 * wall_temp - field.t(i, j - 1);
+                else if (currentCell->wall_id() == GEOMETRY_PGM::cold_id && id == GEOMETRY_PGM::cold_id)
+                    field.t(i, j) = 2 * wall_temp - field.t(i, j - 1);
+            }
         }
 
         
@@ -87,6 +111,19 @@ void FixedWallBoundary::apply(Fields &field) {
             field.u(i, j) = 0.0;
             field.v(i, j) = -field.v(i + 1, j);
             field.p(i, j) = field.p(i + 1, j);
+
+            if(field.isHeatTransfer()){
+                int id = _wall_temperature.begin()->first;
+                double wall_temp = _wall_temperature.begin()->second;
+                if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
+                    field.t(i, j) = field.t(i + 1, j);
+                else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id) {
+                    field.t(i, j) = 2*wall_temp - field.t(i + 1, j);
+            }        
+        
+                else if (currentCell->wall_id() == GEOMETRY_PGM::cold_id && id == GEOMETRY_PGM::cold_id)
+                    field.t(i, j) = 2*wall_temp - field.t(i + 1, j);
+            }
         }
 
         
@@ -97,6 +134,17 @@ void FixedWallBoundary::apply(Fields &field) {
             field.u(i - 1, j) = 0.0; 
             field.v(i, j) = -field.v(i - 1, j);
             field.p(i, j) = field.p(i - 1, j);
+
+            if(field.isHeatTransfer()){
+                int id = _wall_temperature.begin()->first;
+                double wall_temp = _wall_temperature.begin()->second;
+                if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
+                    field.t(i, j) = field.t(i - 1, j);
+                else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
+                    field.t(i, j) = 2*wall_temp - field.t(i - 1, j);
+                else if (currentCell->wall_id() == GEOMETRY_PGM::cold_id && id == GEOMETRY_PGM::cold_id)
+                    field.t(i, j) = 2*wall_temp - field.t(i - 1, j);
+            }
         }
         
         
@@ -118,10 +166,12 @@ MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, 
  **********************************************************************************************/
 // Top Wall
 void MovingWallBoundary::apply(Fields &field) {
+
+  //  std::cout << " in moving wall  " << "\n";
     for (auto currentCell: _cells){
         int i = currentCell->i();
         int j = currentCell->j();
-        field.u(i, j) = 2 * _wall_velocity[8] - field.u(i, j-1);
+        field.u(i, j) = 2 * (_wall_velocity.begin()->second) - field.u(i, j-1);
         //Since v grid is staggered, the v velocity of cells to below of ghost layer should be set to 0.
         field.v(i,j - 1) = 0.0;
         field.p(i,j) = field.p(i, j-1);

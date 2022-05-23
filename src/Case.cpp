@@ -146,6 +146,12 @@ Case::Case(std::string file_name, int argn, char **args) {
             std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
     }
     if (not _grid.fixed_wall_cells().empty()) {
+        if (_field.isHeatTransfer()) {
+        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_a_map));
+        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_h_map));
+        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_c_map));
+        }
+        else
         _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
     }
     if (not _grid.inflow_cells().empty()) {
@@ -238,15 +244,15 @@ void Case::simulate() {
         dt = _field.calculate_dt(_grid);
         t = t + dt;
         ++timestep;
-
         
-       // _boundaries[3]->apply(_field);
-        _boundaries[0]->apply(_field);//Boundary conditions of moving wall applied to field
-        _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
-        _boundaries[2]->apply(_field);
+       
+        for (int i = 0; i < _boundaries.size(); i++) {
+            _boundaries[i]->apply(_field);
+        }
 
-
-        _field.calculate_temperatures(_grid);
+        if (_field.isHeatTransfer()) { 
+            _field.calculate_temperatures(_grid);
+        }
 
         _field.calculate_fluxes(_grid);
         
@@ -256,9 +262,10 @@ void Case::simulate() {
         iter = 0;
 
         do{
-            _boundaries[0]->apply(_field);
-            _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
-            _boundaries[2]->apply(_field);
+
+            for (int i = 0; i < _boundaries.size(); i++) {
+                _boundaries[i]->apply(_field);
+            }
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             iter++;
         }while(res > _tolerance && iter < _max_iter);
@@ -267,9 +274,9 @@ void Case::simulate() {
             std::cout << "Max iteration reached" << "\n";
         }
 
-        std::cout << "Time = " << std::setw(8) << t << " Residual = "<< std::setw(8) << res <<
+        std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
-        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(8) << dt << '\n';
+        " Iter = " << std::setw(12) << iter << " dt = " << std::setw(12) << dt << '\n';
 
         _field.calculate_velocities(_grid);
 
@@ -315,6 +322,11 @@ void Case::output_vtk(int timestep, int my_rank) {
     Pressure->SetName("pressure");
     Pressure->SetNumberOfComponents(1);
 
+    // Temparature Array
+    vtkDoubleArray *Temparature = vtkDoubleArray::New();
+    Pressure->SetName("temparature");
+    Pressure->SetNumberOfComponents(1);
+
     // Velocity Array
     vtkDoubleArray *Velocity = vtkDoubleArray::New();
     Velocity->SetName("velocity");
@@ -329,6 +341,9 @@ void Case::output_vtk(int timestep, int my_rank) {
             _field.u(i - 1,j) = 0.0;
             _field.v(i,j - 1) = 0.0;
             _field.p(i,j) = 0.0;
+
+            if (_field.isHeatTransfer())
+            _field.t(i, j) = 0.0;
         }
     }
 
@@ -337,6 +352,11 @@ void Case::output_vtk(int timestep, int my_rank) {
         for (int i = 1; i < _grid.domain().size_x + 1; i++) {
             double pressure = _field.p(i, j);
             Pressure->InsertNextTuple(&pressure);
+
+            if (_field.isHeatTransfer()) {
+            double temparature = _field.t(i, j);
+            Temparature->InsertNextTuple(&temparature);
+            }
         }
     }
 
@@ -355,6 +375,10 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Add Pressure to Structured Grid
     structuredGrid->GetCellData()->AddArray(Pressure);
+
+    // Add Temparature to Structured Grid
+    if (_field.isHeatTransfer())
+    structuredGrid->GetCellData()->AddArray(Temparature);
 
     // Add Velocity to Structured Grid
     structuredGrid->GetPointData()->AddArray(Velocity);

@@ -193,6 +193,8 @@ void Fields::calculate_temperatures(Grid &grid)
         for(auto j = 0; j < jmaxb; j++)
         {
             T_temp(i,j) = _T(i,j);
+    
+            
         }
     }
 
@@ -202,7 +204,7 @@ void Fields::calculate_temperatures(Grid &grid)
         int i = currentCell->i();
         int j = currentCell->j();
         _T(i,j) = _dt * (_alpha * Discretization::diffusion(T_temp,i,j) - Discretization::convection_Tu(T_temp,_U,i,j) - Discretization::convection_Tv(T_temp,_V,i,j)) + T_temp(i,j);
-        
+        std::cout << " T_temp " << _T(i, j) << "\n";
     }
     
 }
