@@ -133,7 +133,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     build_domain(domain, imax, jmax);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer); 
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer, GX, GY); 
 
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
@@ -147,12 +147,12 @@ Case::Case(std::string file_name, int argn, char **args) {
     }
     if (not _grid.fixed_wall_cells().empty()) {
         if (_field.isHeatTransfer()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_a_map));
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_h_map));
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_c_map));
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_a_map));
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_h_map));
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_c_map));
         }
         else
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
     }
     if (not _grid.inflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<InFlowBoundary>(_grid.inflow_cells(), UIN, VIN));
@@ -324,8 +324,8 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Temparature Array
     vtkDoubleArray *Temparature = vtkDoubleArray::New();
-    Pressure->SetName("temparature");
-    Pressure->SetNumberOfComponents(1);
+    Temparature->SetName("temparature");
+    Temparature->SetNumberOfComponents(1);
 
     // Velocity Array
     vtkDoubleArray *Velocity = vtkDoubleArray::New();
@@ -343,7 +343,7 @@ void Case::output_vtk(int timestep, int my_rank) {
             _field.p(i,j) = 0.0;
 
             if (_field.isHeatTransfer())
-            _field.t(i, j) = 0.0;
+                _field.t(i, j) = 0.0;
         }
     }
 

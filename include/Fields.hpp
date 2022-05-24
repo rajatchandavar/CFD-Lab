@@ -28,7 +28,7 @@ class Fields {
      * @param[in] thermal expansion co-efficient - beta
      *
      */
-    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double _alpha, double _beta, bool _isHeatTransfer);
+    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double _alpha, double _beta, bool _isHeatTransfer, double gx, double gy);
 
     /**
      * @brief Calculates the convective and diffusive fluxes in x and y

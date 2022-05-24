@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <iostream>
 
-Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double alpha, double beta, bool isHeatTransfer)
-    : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha), _beta(beta), _isHeatTransfer(isHeatTransfer) {
+Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double alpha, double beta, bool isHeatTransfer, double gx, double gy)
+    : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha), _beta(beta), _isHeatTransfer(isHeatTransfer), _gx(gx), _gy(gy) {
 
     _U = Matrix<double>(imax + 2, jmax + 2, 0.0);
     _V = Matrix<double>(imax + 2, jmax + 2, 0.0);
@@ -30,6 +30,7 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
  * This function calculates fluxes F and G as mentioned in equation (9) and (10)
  *******************************************************************************/
 void Fields::calculate_fluxes(Grid &grid) {
+    
     
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
@@ -185,6 +186,8 @@ double Fields::calculate_dt(Grid &grid) {
 
 void Fields::calculate_temperatures(Grid &grid)
 {
+
+
     double imaxb = grid.imaxb();
     double jmaxb = grid.jmaxb();
     Matrix<double> T_temp(imaxb, jmaxb, 0);
@@ -193,10 +196,9 @@ void Fields::calculate_temperatures(Grid &grid)
         for(auto j = 0; j < jmaxb; j++)
         {
             T_temp(i,j) = _T(i,j);
-    
-            
         }
     }
+
 
 
     for(auto currentCell: grid.fluid_cells())
@@ -204,7 +206,6 @@ void Fields::calculate_temperatures(Grid &grid)
         int i = currentCell->i();
         int j = currentCell->j();
         _T(i,j) = _dt * (_alpha * Discretization::diffusion(T_temp,i,j) - Discretization::convection_Tu(T_temp,_U,i,j) - Discretization::convection_Tv(T_temp,_V,i,j)) + T_temp(i,j);
-        std::cout << " T_temp " << _T(i, j) << "\n";
     }
     
 }
