@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <stdlib.h>
 
 Grid::Grid(std::string geom_name, Domain &domain) {
 
@@ -231,6 +232,34 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
             }
         }
     }
+
+    for (int i = 1; i < _domain.size_x + 1; ++i) {
+        for (int j = 1; j < _domain.size_y + 1; ++j) {
+
+            int num_fluid_neighbours{0};
+
+            if (_cells(i, j).type() != cell_type::FLUID) {
+                    if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
+                        num_fluid_neighbours++;
+                    }
+                    if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
+                        num_fluid_neighbours++;
+                    }
+                    if (_cells(i, j).neighbour(border_position::BOTTOM)->type() == cell_type::FLUID) {
+                        num_fluid_neighbours++;
+                    }
+                    if (_cells(i, j).neighbour(border_position::TOP)->type() == cell_type::FLUID) {
+                        num_fluid_neighbours++;
+                    }
+            }
+
+            if (num_fluid_neighbours > 2) {
+                std::cout << "Found invalid cell at " << i << "," << j << "\n" << "Exiting the simulation" << "\n";
+                std::cout << "The cell has three fluid neighbour\n";
+                exit (EXIT_FAILURE); 
+            }
+        }
+     }
 }
 
 void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data) {
