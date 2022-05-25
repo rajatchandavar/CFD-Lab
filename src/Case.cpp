@@ -233,7 +233,7 @@ void Case::simulate() {
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
-    double output_counter = 0.0;
+    double output_counter = _output_freq;
     double res; //Residual for Pressure SOR
     int iter, n = 0;
 
@@ -280,7 +280,11 @@ void Case::simulate() {
 
         _field.calculate_velocities(_grid);
 
-        output_vtk(timestep);
+        if(t >= output_counter) {
+
+            output_vtk(timestep);
+            output_counter += _output_freq;
+        }
 
     }
 
