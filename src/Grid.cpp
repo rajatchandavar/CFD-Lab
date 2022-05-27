@@ -20,6 +20,7 @@ Grid::Grid(std::string geom_name, Domain &domain) {
         parse_geometry_file(geom_name, geometry_data); //do job done by build_lid.. cavity here
         assign_cell_types(geometry_data);
     } else {
+        std::cout<<"No geometry file found. Lid driven cavity case will be simulated";
         build_lid_driven_cavity();
     }
 }
