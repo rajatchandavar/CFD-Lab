@@ -287,10 +287,18 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     ss >> depth;
 
     // Following lines : data
-    for (int col = numcols - 1; col > -1; --col) {
-        for (int row = 0; row < numrows; ++row) {
-            ss >> geometry_data[row][col];
+    if( numrows == imaxb() && numcols == jmaxb())
+    {   for (int col = numcols - 1; col > -1; --col) {
+            for (int row = 0; row < numrows; ++row) {
+                ss >> geometry_data[row][col];
+            }
         }
+    }
+
+    else 
+    {
+        std::cout<<"Dimensions do not match in the .pgm file and .dat file. Simulation cannot be carried out. \n";
+        exit(EXIT_FAILURE);
     }
 
     infile.close();

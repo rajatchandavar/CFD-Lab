@@ -276,7 +276,8 @@ void Case::simulate() {
 
         std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
-        " Iter = " << std::setw(12) << iter << " dt = " << std::setw(12) << dt << '\n';
+        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+
 
         _field.calculate_velocities(_grid);
 
