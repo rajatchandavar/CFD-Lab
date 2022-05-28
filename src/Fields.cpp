@@ -29,15 +29,19 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 /********************************************************************************
  * This function calculates fluxes F and G as mentioned in equation (9) and (10)
  *******************************************************************************/
+
 void Fields::calculate_fluxes(Grid &grid) {
-    
-    
+     
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
         int j = currentCell->j();
         _F(i,j) = _U(i,j) + _dt * (_nu*Discretization::diffusion(_U,i,j) - Discretization::convection_u(_U,_V,i,j) + _gx);
         _G(i,j) = _V(i,j) + _dt * (_nu*Discretization::diffusion(_V,i,j) - Discretization::convection_v(_U,_V,i,j) + _gy);
     }
+
+    /********************************************************************************
+     * This section modifies fluxes F and G for heat transfer as mentioned in equation (32) and (33)
+    *******************************************************************************/
 
     if(_isHeatTransfer){
         for (auto currentCell : grid.fluid_cells()) {
@@ -47,32 +51,36 @@ void Fields::calculate_fluxes(Grid &grid) {
             _G(i,j) = _G(i,j) - _beta * _dt / 2.0 * (_T(i,j) + _T(i, j + 1)) * _gy - _dt * _gy;
         }
     }
-
+    
     for (auto currentCell: grid.fixed_wall_cells()){
 
         int i = currentCell->i();
         int j = currentCell->j();
 
-        // obstacles B_NE
+        // B_NE fixed wall corner cell with fluid cells on the North and East directions 
+
         if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::RIGHT)){
             _F(i, j) = _U(i, j);
             _G(i, j) = _V(i, j);
         }
 
-        // obstacles B_SE
+        // B_SE fixed wall corner cell with fluid cells on the South and East directions 
+
        else if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::RIGHT)){
             _F(i, j) = _U(i, j);
             _G(i,j - 1) = _V(i,j - 1);
 
         }
 
-        // obstacles B_NW
+        // B_NW fixed wall corner cell with fluid cells on the North and West directions 
+
         else if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::LEFT)){
             _F(i - 1, j) = _U(i - 1, j);
             _G(i, j) = _V(i, j);
         }
 
-        // obstacles B_SW
+        // B_SW fixed wall corner cell with fluid cells on the South and West directions 
+
         else if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::LEFT)){
             _F(i - 1, j) = _U(i - 1, j);
             _G(i, j - 1) = _V(i, j - 1);
@@ -119,6 +127,7 @@ void Fields::calculate_fluxes(Grid &grid) {
 /********************************************************************************
  * This function calculates the RHS of equation (11) i.e. Pressure SOR
  *******************************************************************************/
+
 void Fields::calculate_rs(Grid &grid) {
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
@@ -133,18 +142,6 @@ void Fields::calculate_rs(Grid &grid) {
  ****************************************************************************************/
 void Fields::calculate_velocities(Grid &grid) {
 
-    // for (int i = 1; i < grid.imax() + 1; ++i ) {
-    //     for (int j = 1; j < grid.jmax() + 1; ++j){
-    //         _U(i, j) = _F(i, j) - (_dt/grid.dx()) * (_P(i + 1, j) - _P(i, j));           
-    //     }       
-    // }
-
-    // for (int i = 1; i < grid.imax() + 1; ++i ) {
-    //     for (int j = 1; j < grid.jmax(); ++j){
-    //         _V(i, j) = _G(i, j) - (_dt/grid.dy()) * (_P(i, j + 1) - _P(i, j));
-    //     }       
-    // }
-
     for (auto currentCell : grid.fluid_cells()){
         int i = currentCell->i();
         int j = currentCell->j();
@@ -158,9 +155,11 @@ void Fields::calculate_velocities(Grid &grid) {
 }
 
 /*****************************************************************************************
- * This function calculate timestep for adaptive time stepping using equation (13)
+ * This function calculate timestep for adaptive time stepping *
  ****************************************************************************************/
+
 double Fields::calculate_dt(Grid &grid) {
+    // Stability constraint for explicit time stepping according to equation (22)
     double t1 = 1 / (2 * _nu * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
     double u_max = 0, v_max = 0, temp;
     for (int i = 0; i < grid.imaxb(); ++i){
@@ -176,17 +175,22 @@ double Fields::calculate_dt(Grid &grid) {
             }
         }
     }
+
+    // Courant Number limitation t2,t3 according to equation (22)
     double t2 = grid.dx() / u_max;
     double t3 = grid.dy() / v_max;   
+    // Stability constraint for explicit time stepping according to equation (37)
     double t4 = 1 / (2 * _alpha * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
     _dt = _tau * std::min({t1, t2, t3, t4});
     return _dt;
 }
 
+/*****************************************************************************************
+ * This function calculate temperatures according to equation (36) *
+ ****************************************************************************************/
 
 void Fields::calculate_temperatures(Grid &grid)
 {
-
 
     double imaxb = grid.imaxb();
     double jmaxb = grid.jmaxb();
@@ -198,8 +202,6 @@ void Fields::calculate_temperatures(Grid &grid)
             T_temp(i,j) = _T(i,j);
         }
     }
-
-
 
     for(auto currentCell: grid.fluid_cells())
     {

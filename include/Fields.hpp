@@ -100,6 +100,7 @@ class Fields {
     /// pressure matrix access and modify
     Matrix<double> &p_matrix();
 
+    /// function to check if heat transfer occurs
     bool isHeatTransfer();
 
   private:

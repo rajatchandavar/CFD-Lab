@@ -9,14 +9,18 @@ FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, do
 
 /*****************************************************************************************
  * This function applies boundary conditions to fixed wall as given in equation (15)-(17)
- ****************************************************************************************/
+****************************************************************************************/
 void FixedWallBoundary::apply(Fields &field) {
 
     for (auto currentCell: _cells){
         int i = currentCell->i();
         int j = currentCell->j();
         
-        // obstacles B_NE
+        // obstacles B_NE (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
+        // the North and East directions 
+
+
+
         if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::RIGHT)){
             field.u(i, j) = 0.0;
             field.u(i - 1, j) = -field.u(i - 1, j + 1);
@@ -37,7 +41,9 @@ void FixedWallBoundary::apply(Fields &field) {
 
         }
 
-        // obstacles B_SE
+        // obstacles B_SE (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
+        // the South and East directions 
+
         else if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::RIGHT)){
             field.u(i, j) = 0.0;
             field.u(i - 1, j) = -field.u(i - 1, j - 1);
@@ -58,7 +64,9 @@ void FixedWallBoundary::apply(Fields &field) {
 
         }
 
-        // obstacle B_NW
+        // obstacle B_NW (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
+        // the North and West directions 
+
         else if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::LEFT)){
             field.u(i - 1, j) = 0.0;
             field.u(i, j) = -field.u(i, j + 1);
@@ -79,7 +87,9 @@ void FixedWallBoundary::apply(Fields &field) {
 
         }
 
-        // obstacle B_SW
+        // obstacle B_SW (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
+        // the South and West directions 
+
         else if(currentCell->is_border(border_position::BOTTOM) && currentCell->is_border(border_position::LEFT)){
             field.u(i - 1, j) = 0.0;
             field.u(i, j) = field.u(i, j - 1);
@@ -100,7 +110,9 @@ void FixedWallBoundary::apply(Fields &field) {
             
         }
 
-        // Bottom Wall B_N
+        // Bottom Wall B_N (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
+        // the North direction
+
         else if(currentCell->is_border(border_position::TOP)){
             field.u(i, j) = -field.u(i, j + 1);
             field.v(i, j) = 0.0;
@@ -120,7 +132,9 @@ void FixedWallBoundary::apply(Fields &field) {
 
         
 
-        // Top Wall B_S
+        // Top Wall B_S (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
+        // the South direction
+
         else if(currentCell->is_border(border_position::BOTTOM)){
             field.u(i, j) = -field.u(i, j - 1);
             field.v(i, j) = 0.0;
@@ -140,7 +154,9 @@ void FixedWallBoundary::apply(Fields &field) {
 
         
 
-        // Left Wall B_E
+        // Left Wall B_E (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
+        // the East direction
+
         else if(currentCell->is_border(border_position::RIGHT)){
             field.u(i, j) = 0.0;
             field.v(i, j) = -field.v(i + 1, j);
@@ -161,8 +177,10 @@ void FixedWallBoundary::apply(Fields &field) {
         }
 
         
+        /***********************************************************************************************
+        * Right Wall B_W (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on the West direction *
+        ***********************************************************************************************/
 
-        // Right Wall B_W
         else if(currentCell->is_border(border_position::LEFT)){
             //Since u grid is staggered, the u velocity of cells to left of ghost layer should be set to 0.
             field.u(i - 1, j) = 0.0; 
@@ -198,10 +216,9 @@ MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, 
  * This function applies boundary conditions to moving wall as given in equation (15)-(17)
  * The u velocity of moving wall is set such that average at the top boundary is wall velocity.
  **********************************************************************************************/
-// Top Wall
+
 void MovingWallBoundary::apply(Fields &field) {
 
-  //  std::cout << " in moving wall  " << "\n";
     for (auto currentCell: _cells){
         int i = currentCell->i();
         int j = currentCell->j();
@@ -212,6 +229,8 @@ void MovingWallBoundary::apply(Fields &field) {
     }
 }
 
+// Inflow Boundary
+
 InFlowBoundary::InFlowBoundary(std::vector<Cell *> cells, double UIN, double VIN) : _cells(cells) {
     _UIN.insert(std::pair(GEOMETRY_PGM::inflow_id, UIN));
     _VIN.insert(std::pair(GEOMETRY_PGM::inflow_id, VIN));
@@ -221,12 +240,18 @@ InFlowBoundary::InFlowBoundary(std::vector<Cell *> cells, std::map<int, double> 
                                        std::map<int, double> wall_temperature)
     : _cells(cells), _UIN(UIN), _VIN(VIN), _wall_temperature(wall_temperature) {}
 
+
+/*****************************************************************************************
+ * This function applies boundary conditions to Inflow Boundary *
+****************************************************************************************/
+
+
 void InFlowBoundary::apply(Fields &field) {
     for (auto currentCell: _cells){
         int i = currentCell->i();
         int j = currentCell->j();
-            field.u(i,j) = _UIN[1];
-            field.v(i,j) = 2 * _VIN[1] - field.v(i + 1, j);
+            field.u(i,j) = _UIN.begin()->second;
+            field.v(i,j) = 2 * _VIN.begin()->second - field.v(i + 1, j);
             field.p(i,j) = field.p(i + 1, j);
     }
 }
@@ -239,6 +264,11 @@ OutFlowBoundary::OutFlowBoundary(std::vector<Cell *> cells, std::map<int, double
                                        std::map<int, double> wall_temperature)
     : _cells(cells), _POUT(POUT), _wall_temperature(wall_temperature) {}
 
+
+/*****************************************************************************************
+ * This function applies boundary conditions to Outflow Boundary *
+****************************************************************************************/
+
 void OutFlowBoundary::apply(Fields &field) {
     for (auto currentCell: _cells){
         int i = currentCell->i();
@@ -246,8 +276,7 @@ void OutFlowBoundary::apply(Fields &field) {
 
             field.u(i,j) = field.u(i - 1,j);
             field.v(i,j) = field.v(i - 1,j);
-            field.p(i,j) = 2 * _POUT[2] - field.p(i - 1, j);
-            // field.p(i,j) = -8 - field.p(i - 1, j);
+            field.p(i,j) = 2 * _POUT.begin()->second - field.p(i - 1, j);
 
     }
 }

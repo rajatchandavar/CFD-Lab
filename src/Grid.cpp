@@ -94,7 +94,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         ++j;
     }
 
-    // Corner cell neighbour assigment
+    // Corner cell neighbour assignment
     // Bottom-Left Corner
     i = 0;
     j = 0;
@@ -106,6 +106,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     if (_cells(i, j).neighbour(border_position::RIGHT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::RIGHT);
     }
+
     // Top-Left Corner
     i = 0;
     j = _domain.size_y + 1;
@@ -141,6 +142,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     if (_cells(i, j).neighbour(border_position::LEFT)->type() == cell_type::FLUID) {
         _cells(i, j).add_border(border_position::LEFT);
     }
+
     // Bottom cells
     j = 0;
     for (int i = 1; i < _domain.size_x + 1; ++i) {
@@ -253,7 +255,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                         num_fluid_neighbours++;
                     }
             }
-
+            // Checking for invalid cells    
             if (num_fluid_neighbours > 2) {
                 std::cout << "Found invalid cell at " << i << "," << j << "\n" << "Exiting the simulation" << "\n";
                 std::cout << "The cell has three fluid neighbour\n";
@@ -287,7 +289,7 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     // Fourth line : depth
     ss >> depth;
 
-    // Following lines : data
+    // Following lines : read data from .pgm file if dimensions of .pgm file match with .dat file 
     if( numrows == imaxb() && numcols == jmaxb())
     {   for (int col = numcols - 1; col > -1; --col) {
             for (int row = 0; row < numrows; ++row) {

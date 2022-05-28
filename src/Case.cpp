@@ -48,13 +48,13 @@ Case::Case(std::string file_name, int argn, char **args) {
     int itermax;    /* max. number of iterations for pressure per time step */
     double eps;     /* accuracy bound for pressure*/
 
-    double UIN;
-    double VIN;
-    int num_of_walls;
+    double UIN;     /* inlet velocity */
+    double VIN;     /* outlet velocity */
+    int num_of_walls; /* number of walls */
 
-    double TI;
-    double beta;
-    double alpha;
+    double TI;      /* initial temperature */
+    double beta;    /* thermal expansion co-efficient */
+    double alpha;   /* thermal diffusivity */
 
    
    double wall_temp_a; // a is adiabatic(5)
@@ -105,6 +105,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     
     file.close();
 
+    // bool variable isHeatTransfer checks if heat transfer occurs in the system
     bool isHeatTransfer = false;
     std::map<int, double> wall_temp_a_map, wall_temp_h_map, wall_temp_c_map;
     if (!wall_temp.empty()){
@@ -237,7 +238,7 @@ void Case::simulate() {
     double res; //Residual for Pressure SOR
     int iter, n = 0;
 
-    output_vtk(timestep);
+    output_vtk(timestep); // write the zeroth timestep
 
     while(t < _t_end){
         
@@ -277,7 +278,6 @@ void Case::simulate() {
         std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
         " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
-
 
         _field.calculate_velocities(_grid);
 
@@ -372,6 +372,9 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Add Velocity to Structured Grid
     structuredGrid->GetPointData()->AddArray(Velocity);
+
+
+    /* This section hides all the obstacles (fixed wall cells) on the vtk file */
 
     for (auto currentCell: _grid.fixed_wall_cells()){
         int i = currentCell->i();
