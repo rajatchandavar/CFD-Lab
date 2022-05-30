@@ -289,22 +289,71 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     // Fourth line : depth
     ss >> depth;
 
-    // Following lines : read data from .pgm file if dimensions of .pgm file match with .dat file 
-    if( numrows == imaxb() && numcols == jmaxb())
-    {   for (int col = numcols - 1; col > -1; --col) {
-            for (int row = 0; row < numrows; ++row) {
-                ss >> geometry_data[row][col];
-            }
+    // // Following lines : read data from .pgm file if dimensions of .pgm file match with .dat file 
+    // if( numrows == imaxb() && numcols == jmaxb())
+    // {   for (int col = numcols - 1; col > -1; --col) {
+    //         for (int row = 0; row < numrows; ++row) {
+    //             ss >> geometry_data[row][col];
+    //         }
+    //     }
+    // }
+
+    // else 
+    // {
+    //     std::cout<<"Dimensions do not match in the .pgm file and .dat file. Simulation cannot be carried out. \n";
+    //     exit(EXIT_FAILURE);
+    // }
+
+    for (int col = numcols - 1; col > -1; --col) {
+        for (int row = 0; row < numrows; ++row) {
+            ss >> geometry_data[row][col];
         }
     }
 
-    else 
-    {
-        std::cout<<"Dimensions do not match in the .pgm file and .dat file. Simulation cannot be carried out. \n";
-        exit(EXIT_FAILURE);
+    infile.close();
+
+    //Scaling
+
+    auto geometry_data_temperary = geometry_data;
+    int x_factor = (imax()) / (numrows - 2);
+    int y_factor = (jmax()) / (numcols - 2);
+
+    int i_temp, j_temp;
+    // Interior cells
+    for (int col = numcols - 2; col > 0; col--) {
+        for (int row = 1; row < numrows - 1; row++){
+            i_temp = (row -1) * x_factor + 1;
+            j_temp = (col -1) * y_factor + 1;
+            for(int j = j_temp; j < y_factor + j_temp; j++)
+                for (int i = i_temp; i < x_factor + i_temp; ++i)
+                    geometry_data[i][j] = geometry_data_temperary[row][col];
+        }
     }
 
-    infile.close();
+    //Top and bottom edges
+    for (int row = 1; row < numrows - 1; ++row){
+        i_temp = (row -1) * x_factor + 1;
+        for (int i = i_temp; i < x_factor + i_temp; ++i){
+            geometry_data[i][0] = geometry_data_temperary[row][0];
+            geometry_data[i][jmaxb() - 1] = geometry_data_temperary[row][numcols - 1];;
+        }
+    }
+
+    //Left and right edges
+    for (int col = numcols - 2; col > 0; col--){
+        j_temp = (col -1) * y_factor + 1;
+        for(int j = j_temp; j < y_factor + j_temp; j++){
+            geometry_data[0][j] = geometry_data_temperary[0][col];
+            geometry_data[imaxb() - 1][j] = geometry_data_temperary[numrows - 1][col];
+        }
+    }
+
+    //Corner cells
+    geometry_data[0][0] = geometry_data_temperary[0][0];
+    geometry_data[0][jmaxb() - 1] = geometry_data_temperary[0][numcols - 1];
+    geometry_data[imaxb() - 1][0] = geometry_data_temperary[numrows - 1][0];
+    geometry_data[imaxb() - 1][jmaxb() - 1] = geometry_data_temperary[numrows - 1][numcols - 1];
+
 }
 
 int Grid::imax() const { return _domain.size_x; }
