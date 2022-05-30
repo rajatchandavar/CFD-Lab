@@ -240,7 +240,6 @@ void Case::simulate() {
     float progress = 0.0;
     int barWidth = 70;
 
-
     output_vtk(timestep); // write the zeroth timestep
 
     while(t < _t_end && progress < 1){
@@ -248,7 +247,6 @@ void Case::simulate() {
         dt = _field.calculate_dt(_grid);
         t = t + dt;
         ++timestep;
-        
        
         for (int i = 0; i < _boundaries.size(); i++) {
             _boundaries[i]->apply(_field);
@@ -261,7 +259,6 @@ void Case::simulate() {
         _field.calculate_fluxes(_grid);
         
         _field.calculate_rs(_grid);
-
 
         iter = 0;
 
@@ -301,10 +298,9 @@ void Case::simulate() {
             else 
                 std::cout << " ";
         }
-        std::cout << "] " << int(progress * 100.0) << " %\r";
-        std::cout.flush();
+        std::cout << "] " << int(progress * 100.0) << " %\r" << " Residual = "<< std::setw(12) << res << "\n";
 
-    
+        std::cout.flush();
 
     }
 
