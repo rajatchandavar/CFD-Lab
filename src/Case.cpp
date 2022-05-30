@@ -272,7 +272,7 @@ void Case::simulate() {
         }while(res > _tolerance && iter < _max_iter);
 
         if (iter == _max_iter) {
-            std::cout << "Max iteration reached" << "\n";
+            std::cout << "Max iteration reached at " << t<<" s \n";
         }
 
         // std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
@@ -298,11 +298,13 @@ void Case::simulate() {
             else 
                 std::cout << " ";
         }
-        std::cout << "] " << int(progress * 100.0) << " %\r" << " Residual = "<< std::setw(12) << res << "\n";
-
+        std::cout << "] " << int(progress * 100.0) << " %\r";
+        // << " Residual = "<< std::setw(12) << res << 
+        
         std::cout.flush();
 
     }
+    std::cout<<"\n";
 
 }
 
