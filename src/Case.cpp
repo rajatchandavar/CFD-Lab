@@ -60,6 +60,8 @@ Case::Case(std::string file_name, int argn, char **args) {
    double wall_temp_a; // a is adiabatic(5)
    double wall_temp_h; // h is hot wall (6)
    double wall_temp_c; // c is cold wall (7)
+
+   int iproc = 1, jproc = 1, num_proc;
     
     std::vector<double> wall_temp;
     if (file.is_open()) {
@@ -98,12 +100,15 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "TI") file >> TI;
                 if (var == "beta") file >> beta;
                 if (var == "alpha") file >> alpha;
-                
+                if (var == "iproc") file >> iproc;
+                if (var == "jproc") file >> jproc;
             }
         }
     }
     
     file.close();
+
+
 
     // bool variable isHeatTransfer checks if heat transfer occurs in the system
     bool isHeatTransfer = false;
@@ -124,14 +129,24 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Set file names for geometry file and output directory
     set_file_names(file_name);
 
-    // Build up the domain
-    Domain domain;
-    domain.dx = xlength / static_cast<double>(imax);
-    domain.dy = ylength / static_cast<double>(jmax);
-    domain.domain_size_x = imax;
-    domain.domain_size_y = jmax;
 
-    build_domain(domain, imax, jmax);
+
+    if (iproc < 1 || jproc < 1){
+        std::cout << "Iproc and Jproc are invalid\n";
+        exit(EXIT_FAILURE);
+    }
+    else{
+        // Build up the domain
+        num_proc = iproc * jproc;
+        Domain domain;
+        domain.dx = xlength / static_cast<double>(imax);
+        domain.dy = ylength / static_cast<double>(jmax);
+        domain.domain_size_x = imax;
+        domain.domain_size_y = jmax;
+        build_domain(domain, imax, jmax, iproc, jproc);
+    }
+
+    
 
     _grid = Grid(_geom_name, domain);
     _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer, GX, GY); 
@@ -415,11 +430,13 @@ void Case::output_vtk(int timestep, int my_rank) {
     writer->Write();
 }
 
-void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain) {
+void Case::build_domain(std::vector<Domain> &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
+
     domain.imin = 0;
     domain.jmin = 0;
     domain.imax = imax_domain + 2;
     domain.jmax = jmax_domain + 2;
     domain.size_x = imax_domain;
     domain.size_y = jmax_domain;
+
 }
