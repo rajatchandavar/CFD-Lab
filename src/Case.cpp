@@ -1,7 +1,10 @@
 #include "Case.hpp"
 #include "Enums.hpp"
+#include "Communication.hpp"
+
 
 #include <algorithm>
+#include <mpi.h>
 #ifdef GCC_VERSION_9_OR_HIGHER
 #include <filesystem>
 #else
@@ -135,7 +138,9 @@ Case::Case(std::string file_name, int argn, char **args) {
         std::cout << "Iproc and Jproc are invalid\n";
         exit(EXIT_FAILURE);
     }
+
     else{
+
         // Build up the domain
         num_proc = iproc * jproc;
         Domain domain;
@@ -143,10 +148,9 @@ Case::Case(std::string file_name, int argn, char **args) {
         domain.dy = ylength / static_cast<double>(jmax);
         domain.domain_size_x = imax;
         domain.domain_size_y = jmax;
+        Communication::init_parallel(argn, args);
         build_domain(domain, imax, jmax, iproc, jproc);
     }
-
-    
 
     _grid = Grid(_geom_name, domain);
     _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer, GX, GY); 
@@ -432,11 +436,23 @@ void Case::output_vtk(int timestep, int my_rank) {
 
 void Case::build_domain(std::vector<Domain> &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
 
+	int nproc, rank;
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    if (procid == 0) {
+    
     domain.imin = 0;
     domain.jmin = 0;
     domain.imax = imax_domain + 2;
     domain.jmax = jmax_domain + 2;
     domain.size_x = imax_domain;
     domain.size_y = jmax_domain;
+
+    }
+
+    else {
+    
+    }
 
 }
