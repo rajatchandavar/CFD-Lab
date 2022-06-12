@@ -107,6 +107,8 @@ class Grid {
     std::vector<Cell *> _inflow_cells;
     std::vector<Cell *> _outflow_cells;
 
+    std::vector<Cell *> _halo_cells;
+
     Domain _domain;
 
     double _dx;

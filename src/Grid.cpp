@@ -8,10 +8,10 @@
 #include <vector>
 #include <stdlib.h>
 
+#include<Communication.hpp>
 Grid::Grid(std::string geom_name, Domain &domain) {
 
     _domain = domain;
-
     _cells = Matrix<Cell>(_domain.size_x + 2, _domain.size_y + 2);
 
     if (geom_name.compare("NONE")) {
@@ -46,43 +46,71 @@ void Grid::build_lid_driven_cavity() {
 
 void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
-    int i = 0;
-    int j = 0;
+    int i = 1;
+    int j = 1;
 
+    if (Communication::get_rank() == 0) {
     for (int j_geom = _domain.jmin; j_geom < _domain.jmax; ++j_geom) {
-        { i = 0; }
+        { i = 1; }
+        if (j_geom == 0) --j;
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
+            
+            // Halo
+            if (i_geom == 0) --i;
+            else if (i_geom == _domain.imin && i_geom != 0){
+                _cells(i - 1, j) = Cell(i - 1, j, cell_type::HALO);
+                _halo_cells.push_back(&_cells(i - 1, j));
+            }
+            else if (i_geom == _domain.imax - 1 && i_geom != _domain.domain_size_x + 1){
+                _cells(i + 1, j) = Cell(i + 1, j, cell_type::HALO);
+                _halo_cells.push_back(&_cells(i + 1, j));                
+            }
+
+            if (j_geom == _domain.jmin && j_geom != 0){
+                _cells(i, j - 1) = Cell(i, j - 1, cell_type::HALO);
+                _halo_cells.push_back(&_cells(i, j - 1));
+            }
+            else if (j_geom == _domain.jmax - 1 && j_geom != _domain.domain_size_y + 1){
+                _cells(i, j + 1) = Cell(i, j + 1, cell_type::HALO);
+                _halo_cells.push_back(&_cells(i, j + 1));
+            }
+
+
+            // Non - Halo Cells
             if (geometry_data.at(i_geom).at(j_geom) == 0) {
                 _cells(i, j) = Cell(i, j, cell_type::FLUID);
                 _fluid_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == LidDrivenCavity::moving_wall_id || geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::moving_wall_id) {
+            } 
+            else if (geometry_data.at(i_geom).at(j_geom) == LidDrivenCavity::moving_wall_id || geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::moving_wall_id) {
                 _cells(i, j) = Cell(i, j, cell_type::MOVING_WALL, geometry_data.at(i_geom).at(j_geom));
                 _moving_wall_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::inflow_id) {
+            } 
+            else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::inflow_id) {
                 _cells(i, j) = Cell(i, j, cell_type::INFLOW, geometry_data.at(i_geom).at(j_geom));
                 _inflow_cells.push_back(&_cells(i, j));
-            } else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::outflow_id) {
+            } 
+            else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::outflow_id) {
                 _cells(i, j) = Cell(i, j, cell_type::OUTFLOW, geometry_data.at(i_geom).at(j_geom));
                 _outflow_cells.push_back(&_cells(i, j));
             }      
-              else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::fixed_wall_id) {
+            else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::fixed_wall_id) {
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                 _fixed_wall_cells.push_back(&_cells(i, j));
             }
-              else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::adiabatic_id) {
+            else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::adiabatic_id) {
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                 _fixed_wall_cells.push_back(&_cells(i, j));
             }
-              else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::hot_id) {
+            else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::hot_id) {
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                 _fixed_wall_cells.push_back(&_cells(i, j));
             }
-              else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::cold_id) {
+            else if (geometry_data.at(i_geom).at(j_geom) == GEOMETRY_PGM::cold_id) {
                 _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                 _fixed_wall_cells.push_back(&_cells(i, j));
             }              
             else {
-                if (i == 0 or j == 0 or i == _domain.size_x + 1 or j == _domain.size_y + 1) {
+                if (i_geom == 0 or j_geom == 0 or i_geom == _domain.domain_size_x + 1 or j_geom == _domain.domain_size_y + 1) {
                     // Outer walls
                     _cells(i, j) = Cell(i, j, cell_type::FIXED_WALL, geometry_data.at(i_geom).at(j_geom));
                     _fixed_wall_cells.push_back(&_cells(i, j));
@@ -93,6 +121,27 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         }
         ++j;
     }
+
+    // Halo cells in corner of domain
+    if (_cells(0, 0).type() == cell_type::DEFAULT)
+        _cells(0, 0) = Cell(0, 0, cell_type::HALO);
+    if (_cells(_domain.size_x + 1, 0).type() == cell_type::DEFAULT)
+        _cells(_domain.size_x + 1, 0) = Cell(_domain.size_x + 1, 0, cell_type::HALO);
+    if (_cells(0, _domain.size_y + 1).type() == cell_type::DEFAULT)
+        _cells(0, _domain.size_y + 1) = Cell(0, _domain.size_y + 1, cell_type::HALO);
+    if (_cells(_domain.size_x + 1, _domain.size_y + 1).type() == cell_type::DEFAULT)
+        _cells(_domain.size_x + 1, _domain.size_y + 1) = Cell(_domain.size_x + 1, _domain.size_y + 1, cell_type::HALO);
+    
+
+
+    // for (int j = 0; j < _domain.size_x + 2; ++j) {
+    //     for (int i = 0; i < _domain.size_y + 2; ++i) {
+    //         if(_cells(i, j).type() == cell_type::HALO){
+    //             std::cout << '\n' << "Halo: " << i << ' ' << j;
+    //         }
+    //     }
+    // }
+
 
     // Corner cell neighbour assignment
     // Bottom-Left Corner
@@ -263,6 +312,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
             }
         }
      }
+    }
 }
 
 void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>> &geometry_data) {

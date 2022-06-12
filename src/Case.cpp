@@ -139,22 +139,23 @@ Case::Case(std::string file_name, int argn, char **args) {
         exit(EXIT_FAILURE);
     }
 
-    else{
+    // Build up the domain
+    
+    Communication::init_parallel(argn, args);
 
-        // Build up the domain
-        num_proc = iproc * jproc;
-        Domain domain;
-        domain.dx = xlength / static_cast<double>(imax);
-        domain.dy = ylength / static_cast<double>(jmax);
-        domain.domain_size_x = imax;
-        domain.domain_size_y = jmax;
-        Communication::init_parallel(argn, args);
-        build_domain(domain, imax, jmax, iproc, jproc);
-    }
+
+    Domain domain;
+    domain.dx = xlength / static_cast<double>(imax);
+    domain.dy = ylength / static_cast<double>(jmax);
+    domain.domain_size_x = imax;
+    domain.domain_size_y = jmax;
+    build_domain(domain, imax, jmax, iproc, jproc);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer, GX, GY); 
 
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer, GX, GY); 
+    Communication::finalize();
+    exit(EXIT_FAILURE);
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
@@ -434,25 +435,60 @@ void Case::output_vtk(int timestep, int my_rank) {
     writer->Write();
 }
 
-void Case::build_domain(std::vector<Domain> &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
+void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
 
-	int nproc, rank;
+	int nproc;
+    nproc = iproc * jproc;
+    // my_rank = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);  
+    int domain_params[6];
 
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if (Communication::get_rank() == 0) {
     
-    if (procid == 0) {
-    
-    domain.imin = 0;
-    domain.jmin = 0;
-    domain.imax = imax_domain + 2;
-    domain.jmax = jmax_domain + 2;
-    domain.size_x = imax_domain;
-    domain.size_y = jmax_domain;
+        int cells_per_domain_x = imax_domain / iproc;
+        int cells_per_domain_y = jmax_domain / jproc;
+        
+        domain.imin = 0;
+        domain.jmin = 0;
+        domain.imax = cells_per_domain_x + 1;
+        domain.jmax = cells_per_domain_y + 1;
+        domain.size_x = cells_per_domain_x;
+        domain.size_y = cells_per_domain_y;
+        
+        int rank;
 
+        for (int j = 0; j < jproc; ++j){
+            for (int i = 0; i < iproc; ++i){
+                domain_params[0] = i * cells_per_domain_x + 1;
+                domain_params[1] = j * cells_per_domain_y + 1;
+                domain_params[2] = (i + 1) * cells_per_domain_x + 1;
+                domain_params[3] = (j + 1) * cells_per_domain_y + 1;
+                domain_params[4] = cells_per_domain_x;
+                domain_params[5] = cells_per_domain_y;
+                if (i == 0)
+                    --domain_params[0];
+                else if (i == iproc - 1)
+                    ++domain_params[2];
+                if (j == 0)
+                    --domain_params[1];
+                else if (j == jproc - 1)
+                    ++domain_params[3];
+                rank = i + j * iproc;
+                if (rank != 0)
+                    MPI_Send(&domain_params, 6, MPI_INT, rank, 0, MPI_COMM_WORLD);
+            }
+        }
     }
 
     else {
-    
+        MPI_Status status;
+        MPI_Recv(&domain_params, 6, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
+
+        domain.imin = domain_params[0];
+        domain.jmin = domain_params[1];
+        domain.imax = domain_params[2];
+        domain.jmax = domain_params[3];
+        domain.size_x = domain_params[4];
+        domain.size_y = domain_params[5];
     }
 
 }

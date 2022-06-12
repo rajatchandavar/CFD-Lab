@@ -49,5 +49,6 @@ enum class cell_type {
     MOVING_WALL,
     INFLOW,
     OUTFLOW,
+    HALO,
     DEFAULT
 };
