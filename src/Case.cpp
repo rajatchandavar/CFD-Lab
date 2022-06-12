@@ -141,8 +141,11 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     // Build up the domain
     
-    Communication::init_parallel(argn, args);
 
+    Communication::init_parallel(argn, args);
+    
+    Communication::iproc = iproc;
+    Communication::jproc = jproc;
 
     Domain domain;
     domain.dx = xlength / static_cast<double>(imax);
@@ -264,10 +267,7 @@ void Case::simulate() {
 
     while(t < _t_end && progress < 1){
         
-        dt = _field.calculate_dt(_grid);
-        t = t + dt;
-        ++timestep;
-       
+        
         for (int i = 0; i < _boundaries.size(); i++) {
             _boundaries[i]->apply(_field);
         }
@@ -277,7 +277,7 @@ void Case::simulate() {
         }
 
         _field.calculate_fluxes(_grid);
-        
+
         _field.calculate_rs(_grid);
 
         iter = 0;
@@ -288,6 +288,12 @@ void Case::simulate() {
                 _boundaries[i]->apply(_field);
             }
             res = _pressure_solver->solve(_field, _grid, _boundaries);
+            
+            //Compute the partial residual sum and send it to the master process
+            
+            // The master process computes the residual norm of the pressure equation 
+            // r^it and broadcasts it to all the other processes (consider MPI_Allreduce)
+            
             iter++;
         }while(res > _tolerance && iter < _max_iter);
 
@@ -295,33 +301,44 @@ void Case::simulate() {
             std::cout << "Max iteration reached at " << t<<" s \n";
         }
 
-        // std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
+        std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
-        // " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
 
         _field.calculate_velocities(_grid);
 
         if(t >= output_counter) {
 
-            output_vtk(timestep);
+            output_vtk(timestep, Communication::get_rank());
             output_counter += _output_freq;
         }
 
-        progress =  t/_t_end; // for demonstration only
-        std::cout << "[";
-        int pos = barWidth * progress;
-        for (int i = 0; i < barWidth; ++i) {
-            if (i < pos) 
-                std::cout << "=";
-            else if (i == pos) 
-                std::cout << ">";
-            else 
-                std::cout << " ";
-        }
-        std::cout << "] " << int(progress * 100.0) << " %\r";
+        // progress =  t/_t_end; // for demonstration only
+        // std::cout << "[";
+        // int pos = barWidth * progress;
+        // for (int i = 0; i < barWidth; ++i) {
+        //     if (i < pos) 
+        //         std::cout << "=";
+        //     else if (i == pos) 
+        //         std::cout << ">";
+        //     else 
+        //         std::cout << " ";
+        // }
+        // std::cout << "] " << int(progress * 100.0) << " %\r";
         // << " Residual = "<< std::setw(12) << res << 
         
-        std::cout.flush();
+        //std::cout.flush();
+
+        
+        // Compute the maximum values of u(n+1) and v (n+1) for each
+        // process and send them to the master process (local max values)
+        // The master process computes the global maximum values of u(n+1)
+        // and v(n+1) and broadcasts them to all other processes
+
+        dt = _field.calculate_dt(_grid);//so that fits all the processes
+        t = t + dt;
+        ++timestep;
+       
 
     }
     std::cout<<"\n";
@@ -428,7 +445,7 @@ void Case::output_vtk(int timestep, int my_rank) {
 
     // Create Filename
     std::string outputname =
-        _dict_name + '/' + _case_name + "_" + std::to_string(timestep) + ".vtk";
+        _dict_name + '/' + _case_name + "_" + std::to_string(my_rank) + "." + std::to_string(timestep) + ".vtk";
 
     writer->SetFileName(outputname.c_str());
     writer->SetInputData(structuredGrid);

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include "Communication.hpp"
 
 Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double alpha, double beta, bool isHeatTransfer, double gx, double gy)
     : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha), _beta(beta), _isHeatTransfer(isHeatTransfer), _gx(gx), _gy(gy) {
@@ -122,6 +123,9 @@ void Fields::calculate_fluxes(Grid &grid) {
 
         _F(i - 1,j) = _U(i - 1,j);
     }
+
+    Communication::communicate(_F);
+    Communication::communicate(_G);
 }
 
 /********************************************************************************
@@ -152,6 +156,9 @@ void Fields::calculate_velocities(Grid &grid) {
             _V(i, j) = _G(i, j) - (_dt/grid.dy()) * (_P(i, j + 1) - _P(i, j));
         }
     }
+
+    Communication::communicate(_U);
+    Communication::communicate(_V);
 }
 
 /*****************************************************************************************
@@ -175,6 +182,8 @@ double Fields::calculate_dt(Grid &grid) {
             }
         }
     }
+
+    //send u_max, v_max to master. and then master broadcasts max of all to each process
 
     // Courant Number limitation t2,t3 according to equation (22)
     double t2 = grid.dx() / u_max;
@@ -209,6 +218,8 @@ void Fields::calculate_temperatures(Grid &grid)
         int j = currentCell->j();
         _T(i,j) = _dt * (_alpha * Discretization::diffusion(T_temp,i,j) - Discretization::convection_Tu(T_temp,_U,i,j) - Discretization::convection_Tv(T_temp,_V,i,j)) + T_temp(i,j);
     }
+
+    Communication::communicate(_T);
     
 }
 

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include "Communication.hpp"
 
 SOR::SOR(double omega) : _omega(omega) {}
 
@@ -20,6 +21,8 @@ double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<B
                         coeff * (Discretization::sor_helper(field.p_matrix(), i, j) - field.rs(i, j));
     }
 
+    Communication::communicate(field.p_matrix());
+
     double res = 0.0;
     double rloc = 0.0;
 
@@ -30,8 +33,10 @@ double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<B
         double val = Discretization::laplacian(field.p_matrix(), i, j) - field.rs(i, j);
         rloc += (val * val);
     }
+
+
     {
-        res = rloc / (grid.fluid_cells().size());
+        res = rloc / (grid.fluid_cells().size());//sum up rloc and fluid cell size from each process in master
         res = std::sqrt(res);
     }
 
