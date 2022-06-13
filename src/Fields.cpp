@@ -168,7 +168,7 @@ void Fields::calculate_velocities(Grid &grid) {
 double Fields::calculate_dt(Grid &grid) {
     // Stability constraint for explicit time stepping according to equation (22)
     double t1 = 1 / (2 * _nu * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
-    double u_max = 0, v_max = 0, temp;
+    double u_max = 0, v_max = 0, temp, umax, vmax;
     for (int i = 0; i < grid.imaxb(); ++i){
         for(int j=0;j<grid.jmaxb();++j)
         {
@@ -182,15 +182,30 @@ double Fields::calculate_dt(Grid &grid) {
             }
         }
     }
+    double t4 = 1 / (2 * _alpha * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
 
-    //send u_max, v_max to master. and then master broadcasts max of all to each process
+    if (Communication::get_rank() == 0) {
+
+    umax = Communication::reduce_max(u_max);
+    vmax = Communication::reduce_max(v_max);
+    Communication::broadcast(umax);
+    Communication::broadcast(vmax);
+
+    }
+    
+    double t2 = grid.dx() / umax;
+    double t3 = grid.dy() / vmax; 
+
+    // move up t4, calc min(dx&dy) for each process max(umax&vmax)
+    // for each process and find out t2&t3
+    // but this will be done for eah process which doesnt make sense
 
     // Courant Number limitation t2,t3 according to equation (22)
-    double t2 = grid.dx() / u_max;
-    double t3 = grid.dy() / v_max;   
+  
     // Stability constraint for explicit time stepping according to equation (37)
-    double t4 = 1 / (2 * _alpha * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
+
     _dt = _tau * std::min({t1, t2, t3, t4});
+
     return _dt;
 }
 

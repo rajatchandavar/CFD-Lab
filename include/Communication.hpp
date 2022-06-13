@@ -1,20 +1,28 @@
 #pragma once
-#include<Datastructures.hpp>
+
+#include"Datastructures.hpp"
+#include <map>
 
 class Communication{
     public:
-
-    Communication(int, int);
 
     static void init_parallel(int argc, char **argv);
 
     static void communicate(Matrix<double> &);
 
+    static double reduce_min(double );
+
+    static double reduce_max(double );
+
+    static double reduce_sum(double );
+
+    static void broadcast(double );
+
     static int get_rank();
+
+    static int get_size();
     
     static void finalize();
-
-    static int iproc, jproc;
 
     private:
 

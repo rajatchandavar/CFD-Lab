@@ -11,6 +11,9 @@ double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<B
     double dx = grid.dx();
     double dy = grid.dy();
 
+    double rloc_sum;
+    int size;
+
     double coeff = _omega / (2.0 * (1.0 / (dx * dx) + 1.0 / (dy * dy))); // = _omega * h^2 / 4.0, if dx == dy == h
 
     for (auto currentCell : grid.fluid_cells()) {
@@ -34,11 +37,15 @@ double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<B
         rloc += (val * val);
     }
 
+    rloc_sum = Communication::reduce_sum(rloc);
+    size = Communication::reduce_sum(grid.fluid_cells().size());
 
+    if(Communication::get_rank() == 0)
     {
-        res = rloc / (grid.fluid_cells().size());//sum up rloc and fluid cell size from each process in master
+        res = rloc_sum / (size);
         res = std::sqrt(res);
     }
+        MPI_Bcast(&res, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     return res;
 }

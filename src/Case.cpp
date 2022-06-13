@@ -144,8 +144,8 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     Communication::init_parallel(argn, args);
     
-    Communication::iproc = iproc;
-    Communication::jproc = jproc;
+    // Communication::iproc = iproc;
+    // Communication::jproc = jproc;
 
     Domain domain;
     domain.dx = xlength / static_cast<double>(imax);
@@ -157,8 +157,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     _grid = Grid(_geom_name, domain);
 
     _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer, GX, GY); 
-    Communication::finalize();
-    exit(EXIT_FAILURE);
+
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
     _max_iter = itermax;
@@ -254,6 +253,8 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
+    // std::cout << "simulate started\n";
+
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
@@ -263,14 +264,16 @@ void Case::simulate() {
     float progress = 0.0;
     int barWidth = 70;
 
-    output_vtk(timestep); // write the zeroth timestep
+    output_vtk(timestep, Communication::get_rank()); // write the zeroth timestep
 
     while(t < _t_end && progress < 1){
         
+    // std::cout << "first time boundary called\n";
         
         for (int i = 0; i < _boundaries.size(); i++) {
             _boundaries[i]->apply(_field);
         }
+    // std::cout << "simulate fluxes started\n";
 
         if (_field.isHeatTransfer()) { 
             _field.calculate_temperatures(_grid);
@@ -342,6 +345,7 @@ void Case::simulate() {
 
     }
     std::cout<<"\n";
+    Communication::finalize();
 
 }
 
