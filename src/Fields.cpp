@@ -185,26 +185,26 @@ double Fields::calculate_dt(Grid &grid) {
     double t4 = 1 / (2 * _alpha * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
 
     // std::cout << "Rank " << Communication::get_rank() << " was here\n";
-    if (Communication::get_rank() == 0) {
+    // if (Communication::get_rank() == 0) {
 
-        std::cout << "Rank " << Communication::get_rank() << " was here\n";
+        // std::cout << "Rank " << Communication::get_rank() << " was here\n";
 
         umax = Communication::reduce_max(u_max);
         vmax = Communication::reduce_max(v_max);
-        std::cout << "Rank was here after reduce\n";
+        // std::cout << "Rank was here after reduce\n";
 
         MPI_Bcast(&umax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Bcast(&vmax, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
-        std::cout << "Rank was here after Bcast\n";
+        // std::cout << "Rank was here after Bcast\n";
 
 
     //Communication::broadcast(umax);
     //Communication::broadcast(vmax);
 
-    }
+    // }
     // std::cout << "Rank " << Communication::get_rank() << " was here before barrier after bcast\n";
-    MPI_Barrier(MPI_COMM_WORLD);
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     // std::cout << "Rank " << Communication::get_rank() << " was here after barrier\n";
 

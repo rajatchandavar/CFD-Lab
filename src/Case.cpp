@@ -273,7 +273,7 @@ void Case::simulate() {
         for (int i = 0; i < _boundaries.size(); i++) {
             _boundaries[i]->apply(_field);
         }
-        std::cout << "BC applied "<< Communication::get_rank() << '\n';
+        // std::cout << "BC applied "<< Communication::get_rank() << '\n';
 
         if (_field.isHeatTransfer()) { 
             _field.calculate_temperatures(_grid);
@@ -281,11 +281,11 @@ void Case::simulate() {
 
         _field.calculate_fluxes(_grid);
 
-        std::cout << "Fluxes computed " << Communication::get_rank() << '\n';
+        // std::cout << "Fluxes computed " << Communication::get_rank() << '\n';
 
         _field.calculate_rs(_grid);
 
-        std::cout << "RS computed " << Communication::get_rank() << '\n';
+        // std::cout << "RS computed " << Communication::get_rank() << '\n';
 
 
         iter = 0;
@@ -311,13 +311,18 @@ void Case::simulate() {
             iter++;
         }while(res > _tolerance && iter < _max_iter);
 
-        if (iter == _max_iter) {
-            std::cout << "Max iteration reached at " << t<<" s \n";
-        }
 
-        std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
+
+        if (Communication::get_rank() == 0){
+
+            if (iter == _max_iter) {
+                std::cout << "Max iteration reached at " << t<<" s \n";
+            }
+            
+            std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
-        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+            " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+        }
 
         _field.calculate_velocities(_grid);
 
@@ -349,12 +354,12 @@ void Case::simulate() {
         // The master process computes the global maximum values of u(n+1)
         // and v(n+1) and broadcasts them to all other processes
 
-        std::cout << "Time step to be done" << Communication::get_rank() << '\n';
+        //std::cout << "Time step to be done" << Communication::get_rank() << '\n';
         dt = _field.calculate_dt(_grid);//so that fits all the processes
         t = t + dt;
         ++timestep;
        
-        std::cout << "Timestep " << t << "Rank:" << Communication::get_rank() << "\n";
+        //std::cout << "Timestep " << t << "Rank:" << Communication::get_rank() << "\n";
     }
     std::cout<<"\n";
     Communication::finalize();
