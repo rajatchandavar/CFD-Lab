@@ -273,7 +273,7 @@ void Case::simulate() {
         for (int i = 0; i < _boundaries.size(); i++) {
             _boundaries[i]->apply(_field);
         }
-    // std::cout << "simulate fluxes started\n";
+        std::cout << "BC applied "<< Communication::get_rank() << '\n';
 
         if (_field.isHeatTransfer()) { 
             _field.calculate_temperatures(_grid);
@@ -281,7 +281,12 @@ void Case::simulate() {
 
         _field.calculate_fluxes(_grid);
 
+        std::cout << "Fluxes computed " << Communication::get_rank() << '\n';
+
         _field.calculate_rs(_grid);
+
+        std::cout << "RS computed " << Communication::get_rank() << '\n';
+
 
         iter = 0;
 
@@ -290,8 +295,14 @@ void Case::simulate() {
             for (int i = 0; i < _boundaries.size(); i++) {
                 _boundaries[i]->apply(_field);
             }
+
+            //std::cout << "P BC " << Communication::get_rank() << '\n';
+
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             
+            //std::cout << "P solve done " << Communication::get_rank() << '\n';
+            
+        
             //Compute the partial residual sum and send it to the master process
             
             // The master process computes the residual norm of the pressure equation 
@@ -338,11 +349,12 @@ void Case::simulate() {
         // The master process computes the global maximum values of u(n+1)
         // and v(n+1) and broadcasts them to all other processes
 
+        std::cout << "Time step to be done" << Communication::get_rank() << '\n';
         dt = _field.calculate_dt(_grid);//so that fits all the processes
         t = t + dt;
         ++timestep;
        
-
+        std::cout << "Timestep " << t << "Rank:" << Communication::get_rank() << "\n";
     }
     std::cout<<"\n";
     Communication::finalize();
@@ -474,6 +486,10 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
         domain.jmax = cells_per_domain_y + 1;
         domain.size_x = cells_per_domain_x;
         domain.size_y = cells_per_domain_y;
+        if (iproc - 1 == 0)
+            ++domain.imax;
+        if (jproc - 1 == 0)
+            ++domain.jmax;
         
         int rank;
 

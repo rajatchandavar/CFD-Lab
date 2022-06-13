@@ -19,8 +19,6 @@ void FixedWallBoundary::apply(Fields &field) {
         // obstacles B_NE (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the North and East directions 
 
-
-
         if(currentCell->is_border(border_position::TOP) && currentCell->is_border(border_position::RIGHT)){
             field.u(i, j) = 0.0;
             field.u(i - 1, j) = -field.u(i - 1, j + 1);

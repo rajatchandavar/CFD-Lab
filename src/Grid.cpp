@@ -49,7 +49,6 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     int i = 1;
     int j = 1;
 
-    if (Communication::get_rank() == 0) {
     for (int j_geom = _domain.jmin; j_geom < _domain.jmax; ++j_geom) {
         { i = 1; }
         if (j_geom == 0) --j;
@@ -311,7 +310,6 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
                 exit (EXIT_FAILURE); 
             }
         }
-     }
     }
 }
 
