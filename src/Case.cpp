@@ -183,6 +183,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutFlowBoundary>(_grid.outflow_cells(), GEOMETRY_PGM::POUT));
     }
+
 }
 
 void Case::set_file_names(std::string file_name) {
@@ -311,7 +312,7 @@ void Case::simulate() {
             iter++;
         }while(res > _tolerance && iter < _max_iter);
 
-
+        //MIGHT NEED TO TAKE ITER FROM ALL PROCESSES TAKE MAX AND THEN DECIDE TO OUTPUT
 
         if (Communication::get_rank() == 0){
 
@@ -455,7 +456,19 @@ void Case::output_vtk(int timestep, int my_rank) {
         int i = currentCell->i();
         int j = currentCell->j();
 
-        if (j > 0 && i > 0 && j <= _grid.jmax() && i <= _grid.imax()){
+        if (j > 0 && i > 0 && j <= _grid.domain().domain_size_y && i <= _grid.domain().domain_size_x){
+            int id = (j - 1) * _grid.imax() + (i - 1);
+            structuredGrid->BlankCell(id);
+        }
+    }
+
+    /* This section hides all the Halo cells */
+
+    for (auto currentCell: _grid.halo_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+
+        if (j > 0 && i > 0 && j <= _grid.domain().domain_size_y && i <= _grid.domain().domain_size_x){
             int id = (j - 1) * _grid.imax() + (i - 1);
             structuredGrid->BlankCell(id);
         }
@@ -508,11 +521,11 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
                 domain_params[5] = cells_per_domain_y;
                 if (i == 0)
                     --domain_params[0];
-                else if (i == iproc - 1)
+                if (i == iproc - 1)
                     ++domain_params[2];
                 if (j == 0)
                     --domain_params[1];
-                else if (j == jproc - 1)
+                if (j == jproc - 1)
                     ++domain_params[3];
                 rank = i + j * iproc;
                 if (rank != 0)

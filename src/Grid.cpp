@@ -10,7 +10,6 @@
 
 #include<Communication.hpp>
 Grid::Grid(std::string geom_name, Domain &domain) {
-
     _domain = domain;
     _cells = Matrix<Cell>(_domain.size_x + 2, _domain.size_y + 2);
 
@@ -435,3 +434,6 @@ const std::vector<Cell *> &Grid::moving_wall_cells() const { return _moving_wall
 const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 
 const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }
+
+const std::vector<Cell *> &Grid::halo_cells() const { return _halo_cells; }
+

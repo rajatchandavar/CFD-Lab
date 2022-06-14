@@ -31,7 +31,6 @@ void Communication::broadcast(double umax) {
 void Communication::communicate(Matrix<double> &field){
     auto neighbour = _assign_neighbours(get_rank());
 
-    //std::cout << "Communicate called by rank " << get_rank() << '\n';
     int data_imax = field.imax()-2;
     int data_jmax = field.jmax()-2;
 
@@ -49,8 +48,6 @@ void Communication::communicate(Matrix<double> &field){
         for (auto k = 0; k < data_jmax; ++k){
             field(0, k + 1) = data_lr_in[k];
         }
-
-        //std::cout << "Communicate L " << get_rank() << '\n';
         
     }
 
@@ -113,7 +110,7 @@ int Communication::get_rank(){
 
 int Communication::get_size(){
     int size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &size); 
+    MPI_Comm_rank(MPI_COMM_WORLD, &size); //WRONG!!!!!
     return size;
 }
 
@@ -126,7 +123,7 @@ void Communication::finalize() {
 std::map<char, int> Communication::_assign_neighbours(int rank){
     std::map<char, int> neighbour;
     /**************************************************************************/
-    int iproc = 2, jproc = 1;
+    int iproc = 2, jproc = 2;
     /*************************************************************************/
     int i = rank % iproc;
     int j = (rank - i) / iproc;

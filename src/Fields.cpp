@@ -149,10 +149,10 @@ void Fields::calculate_velocities(Grid &grid) {
     for (auto currentCell : grid.fluid_cells()){
         int i = currentCell->i();
         int j = currentCell->j();
-        if ((currentCell->neighbour(border_position::RIGHT)->type() == cell_type::FLUID) || (currentCell->neighbour(border_position::RIGHT)->type() == cell_type::OUTFLOW)) {
+        if ((currentCell->neighbour(border_position::RIGHT)->type() == cell_type::FLUID) || (currentCell->neighbour(border_position::RIGHT)->type() == cell_type::OUTFLOW) || (currentCell->neighbour(border_position::RIGHT)->type() == cell_type::HALO)) {
             _U(i, j) = _F(i, j) - (_dt/grid.dx()) * (_P(i + 1, j) - _P(i, j));           
         }
-        if ((currentCell->neighbour(border_position::TOP)->type() == cell_type::FLUID) || (currentCell->neighbour(border_position::TOP)->type() == cell_type::OUTFLOW)) {
+        if ((currentCell->neighbour(border_position::TOP)->type() == cell_type::FLUID) || (currentCell->neighbour(border_position::TOP)->type() == cell_type::OUTFLOW) || (currentCell->neighbour(border_position::TOP)->type() == cell_type::HALO)) {
             _V(i, j) = _G(i, j) - (_dt/grid.dy()) * (_P(i, j + 1) - _P(i, j));
         }
     }

@@ -86,6 +86,13 @@ class Grid {
      */
     const std::vector<Cell *> &outflow_cells() const;
 
+        /**
+     * @brief Access Halo cells
+     *
+     * @param[out] vector of Halo cells
+     */
+    const std::vector<Cell *> &halo_cells() const;
+
   private:
     /**@brief Default lid driven cavity case generator
      *
