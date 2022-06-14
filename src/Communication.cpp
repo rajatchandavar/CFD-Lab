@@ -110,7 +110,7 @@ int Communication::get_rank(){
 
 int Communication::get_size(){
     int size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &size); //WRONG!!!!!
+    MPI_Comm_size(MPI_COMM_WORLD, &size); //WRONG!!!!!
     return size;
 }
 
