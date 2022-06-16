@@ -363,7 +363,7 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
 
     if ((_domain.domain_size_x) !=(numrows - 2) || (_domain.domain_size_y) !=(numcols - 2)) {
         
-        if ((imax() % (numrows - 2) != 0 && imax() % (numrows - 2) != 0)) {
+        if (((_domain.domain_size_x) % (numrows - 2) != 0 && (_domain.domain_size_y) % (numcols - 2) != 0)) {
             std::cout << "Error: Improper Scaling, you can only do integer scaling\n";
             exit(EXIT_FAILURE);
         }
@@ -389,7 +389,7 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
             i_temp = (row -1) * x_factor + 1;
             for (int i = i_temp; i < x_factor + i_temp; ++i){
                 geometry_data[i][0] = geometry_data_temperary[row][0];
-                geometry_data[i][jmaxb() - 1] = geometry_data_temperary[row][numcols - 1];;
+                geometry_data[i][_domain.domain_size_y + 1] = geometry_data_temperary[row][numcols - 1];;
             }
         }
 
@@ -398,15 +398,15 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
             j_temp = (col -1) * y_factor + 1;
             for(int j = j_temp; j < y_factor + j_temp; j++){
                 geometry_data[0][j] = geometry_data_temperary[0][col];
-                geometry_data[imaxb() - 1][j] = geometry_data_temperary[numrows - 1][col];
+                geometry_data[_domain.domain_size_x + 1][j] = geometry_data_temperary[numrows - 1][col];
             }
         }
 
         //Corner cells
         geometry_data[0][0] = geometry_data_temperary[0][0];
-        geometry_data[0][jmaxb() - 1] = geometry_data_temperary[0][numcols - 1];
-        geometry_data[imaxb() - 1][0] = geometry_data_temperary[numrows - 1][0];
-        geometry_data[imaxb() - 1][jmaxb() - 1] = geometry_data_temperary[numrows - 1][numcols - 1];
+        geometry_data[0][_domain.domain_size_y + 1] = geometry_data_temperary[0][numcols - 1];
+        geometry_data[_domain.domain_size_x + 1][0] = geometry_data_temperary[numrows - 1][0];
+        geometry_data[_domain.domain_size_x + 1][_domain.domain_size_y + 1] = geometry_data_temperary[numrows - 1][numcols - 1];
         }
 
 }
