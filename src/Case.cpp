@@ -258,7 +258,7 @@ void Case::simulate() {
     float progress = 0.0;
     int barWidth = 70;
 
-    // output_vtk(timestep, Communication::get_rank()); // write the zeroth timestep
+    output_vtk(timestep, Communication::get_rank()); // write the zeroth timestep
 
     while(t < _t_end && progress < 1){
         
@@ -320,11 +320,11 @@ void Case::simulate() {
 
         _field.calculate_velocities(_grid);
 
-        // if(t >= output_counter) {
+        if(t >= output_counter) {
 
-        //     output_vtk(timestep, Communication::get_rank());
-        //     output_counter += _output_freq;
-        // }
+            output_vtk(timestep, Communication::get_rank());
+            output_counter += _output_freq;
+        }
 
         // progress =  t/_t_end; // for demonstration only
         // std::cout << "[";
@@ -381,6 +381,8 @@ void Case::output_vtk(int timestep, int my_rank) {
         x = _grid.domain().imin * dx;
         { x += dx; }
         for (int row = 0; row < _grid.domain().size_x + 1; row++) {
+            // if (Communication::get_rank() == 0)
+            //     std::cout << "\n\nx, y, z = " << x << ' ' << y << ' ' << z << '\n';
             points->InsertNextPoint(x, y, z);
             x += dx;
         }
@@ -448,24 +450,28 @@ void Case::output_vtk(int timestep, int my_rank) {
     for (auto currentCell: _grid.fixed_wall_cells()){
         int i = currentCell->i();
         int j = currentCell->j();
-
-        if (j > 0 && i > 0 && j <= _grid.domain().domain_size_y && i <= _grid.domain().domain_size_x){
+        
+        // if (Communication::get_rank() == 1)
+        //     std::cout << "\nFW: " << i << j;
+        if (j > 0 && i > 0 && j <= _grid.jmax() && i <= _grid.imax()){
             int id = (j - 1) * _grid.imax() + (i - 1);
             structuredGrid->BlankCell(id);
+            // if (Communication::get_rank() == 1)
+            //     std::cout << "\nid: " << id;
         }
     }
 
     /* This section hides all the Halo cells */
 
-    for (auto currentCell: _grid.halo_cells()){
-        int i = currentCell->i();
-        int j = currentCell->j();
+    // for (auto currentCell: _grid.halo_cells()){
+    //     int i = currentCell->i();
+    //     int j = currentCell->j();
 
-        if (j > 0 && i > 0 && j <= _grid.domain().domain_size_y && i <= _grid.domain().domain_size_x){
-            int id = (j - 1) * _grid.imax() + (i - 1);
-            structuredGrid->BlankCell(id);
-        }
-    }
+    //     if (j > 0 && i > 0 && j <= _grid.domain().domain_size_y && i <= _grid.domain().domain_size_x){
+    //         int id = (j - 1) * _grid.imax() + (i - 1);
+    //         structuredGrid->BlankCell(id);
+    //     }
+    // }
 
     // Write Grid
     vtkSmartPointer<vtkStructuredGridWriter> writer = vtkSmartPointer<vtkStructuredGridWriter>::New();
@@ -486,7 +492,7 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
     size = Communication::get_size();  
     int domain_params[6];
 
-    if (nproc != size){
+    if (nproc != size){ // MAYBE THINK OF COUT FOR ONLY ONE THREAD AND FINALIZING AS INSIDE PARALLEL REGION
         std::cout << "Error: Mismatch of number of processors and subdomains\n";
         exit(EXIT_FAILURE);
     }
@@ -498,33 +504,22 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
         
         domain.imin = 0;
         domain.jmin = 0;
-        domain.imax = cells_per_domain_x + 1;
-        domain.jmax = cells_per_domain_y + 1;
+        domain.imax = cells_per_domain_x + 2;
+        domain.jmax = cells_per_domain_y + 2;
         domain.size_x = cells_per_domain_x;
         domain.size_y = cells_per_domain_y;
-        if (iproc - 1 == 0)
-            ++domain.imax;
-        if (jproc - 1 == 0)
-            ++domain.jmax;
         
         int rank;
 
         for (int j = 0; j < jproc; ++j){
             for (int i = 0; i < iproc; ++i){
-                domain_params[0] = i * cells_per_domain_x + 1;
-                domain_params[1] = j * cells_per_domain_y + 1;
-                domain_params[2] = (i + 1) * cells_per_domain_x + 1;
-                domain_params[3] = (j + 1) * cells_per_domain_y + 1;
+                domain_params[0] = i * cells_per_domain_x;
+                domain_params[1] = j * cells_per_domain_y;
+                domain_params[2] = (i + 1) * cells_per_domain_x + 2;
+                domain_params[3] = (j + 1) * cells_per_domain_y + 2;
                 domain_params[4] = cells_per_domain_x;
                 domain_params[5] = cells_per_domain_y;
-                if (i == 0)
-                    --domain_params[0];
-                if (i == iproc - 1)
-                    ++domain_params[2];
-                if (j == 0)
-                    --domain_params[1];
-                if (j == jproc - 1)
-                    ++domain_params[3];
+
                 rank = i + j * iproc;
                 if (rank != 0)
                     MPI_Send(&domain_params, 6, MPI_INT, rank, 0, MPI_COMM_WORLD);

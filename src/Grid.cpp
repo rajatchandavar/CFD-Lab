@@ -19,7 +19,8 @@ Grid::Grid(std::string geom_name, Domain &domain) {
         parse_geometry_file(geom_name, geometry_data); //do job done by build_lid.. cavity here
         assign_cell_types(geometry_data);
     } else {
-        std::cout<<"No geometry file found. Lid driven cavity case will be simulated";
+        if (Communication::get_rank() == 0)
+            std::cout<<"No geometry file found. Lid driven cavity case will be simulated";
         build_lid_driven_cavity();
     }
 }
@@ -45,37 +46,34 @@ void Grid::build_lid_driven_cavity() {
 
 void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
 
-    int i = 1;
-    int j = 1;
+    int i = 0;
+    int j = 0;
 
     for (int j_geom = _domain.jmin; j_geom < _domain.jmax; ++j_geom) {
-        { i = 1; }
-        if (j_geom == 0) --j;
+        { i = 0; }
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
             
             // Halo
-            if (i_geom == 0) --i;
-            else if (i_geom == _domain.imin && i_geom != 0){
-                _cells(i - 1, j) = Cell(i - 1, j, cell_type::HALO);
-                _halo_cells.push_back(&_cells(i - 1, j));
+            if (i_geom == _domain.imin && i_geom != 0 && j_geom != 0 && j_geom != _domain.domain_size_y + 1){
+                _cells(i, j) = Cell(i, j, cell_type::HALO);
+                _halo_cells.push_back(&_cells(i, j));
             }
-            else if (i_geom == _domain.imax - 1 && i_geom != _domain.domain_size_x + 1){
-                _cells(i + 1, j) = Cell(i + 1, j, cell_type::HALO);
-                _halo_cells.push_back(&_cells(i + 1, j));                
+            else if (i_geom == _domain.imax - 1 && i_geom != _domain.domain_size_x + 1 && j_geom != 0 && j_geom != _domain.domain_size_y + 1){
+                _cells(i, j) = Cell(i, j, cell_type::HALO);
+                _halo_cells.push_back(&_cells(i, j));                
             }
-
-            if (j_geom == _domain.jmin && j_geom != 0){
-                _cells(i, j - 1) = Cell(i, j - 1, cell_type::HALO);
-                _halo_cells.push_back(&_cells(i, j - 1));
+            else if (j_geom == _domain.jmin && j_geom != 0 && i_geom != 0 && i_geom != _domain.domain_size_x + 1){
+                _cells(i, j) = Cell(i, j, cell_type::HALO);
+                _halo_cells.push_back(&_cells(i, j));
             }
-            else if (j_geom == _domain.jmax - 1 && j_geom != _domain.domain_size_y + 1){
-                _cells(i, j + 1) = Cell(i, j + 1, cell_type::HALO);
-                _halo_cells.push_back(&_cells(i, j + 1));
+            else if (j_geom == _domain.jmax - 1  && j_geom != _domain.domain_size_y + 1 && i_geom != 0 && i_geom != _domain.domain_size_x + 1){
+                _cells(i, j) = Cell(i, j, cell_type::HALO);
+                _halo_cells.push_back(&_cells(i, j));
             }
 
 
             // Non - Halo Cells
-            if (geometry_data.at(i_geom).at(j_geom) == 0) {
+            else if (geometry_data.at(i_geom).at(j_geom) == 0) {
                 _cells(i, j) = Cell(i, j, cell_type::FLUID);
                 _fluid_cells.push_back(&_cells(i, j));
             } 
@@ -121,24 +119,26 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
     }
 
     // Halo cells in corner of domain
-    if (_cells(0, 0).type() == cell_type::DEFAULT)
-        _cells(0, 0) = Cell(0, 0, cell_type::HALO);
-    if (_cells(_domain.size_x + 1, 0).type() == cell_type::DEFAULT)
-        _cells(_domain.size_x + 1, 0) = Cell(_domain.size_x + 1, 0, cell_type::HALO);
-    if (_cells(0, _domain.size_y + 1).type() == cell_type::DEFAULT)
-        _cells(0, _domain.size_y + 1) = Cell(0, _domain.size_y + 1, cell_type::HALO);
-    if (_cells(_domain.size_x + 1, _domain.size_y + 1).type() == cell_type::DEFAULT)
-        _cells(_domain.size_x + 1, _domain.size_y + 1) = Cell(_domain.size_x + 1, _domain.size_y + 1, cell_type::HALO);
+    // if (_cells(0, 0).type() == cell_type::DEFAULT)
+    //     _cells(0, 0) = Cell(0, 0, cell_type::HALO);
+    // if (_cells(_domain.size_x + 1, 0).type() == cell_type::DEFAULT)
+    //     _cells(_domain.size_x + 1, 0) = Cell(_domain.size_x + 1, 0, cell_type::HALO);
+    // if (_cells(0, _domain.size_y + 1).type() == cell_type::DEFAULT)
+    //     _cells(0, _domain.size_y + 1) = Cell(0, _domain.size_y + 1, cell_type::HALO);
+    // if (_cells(_domain.size_x + 1, _domain.size_y + 1).type() == cell_type::DEFAULT)
+    //     _cells(_domain.size_x + 1, _domain.size_y + 1) = Cell(_domain.size_x + 1, _domain.size_y + 1, cell_type::HALO);
     
 
-
-    // for (int j = 0; j < _domain.size_x + 2; ++j) {
-    //     for (int i = 0; i < _domain.size_y + 2; ++i) {
-    //         if(_cells(i, j).type() == cell_type::HALO){
-    //             std::cout << '\n' << "Halo: " << i << ' ' << j;
+    // if (Communication::get_rank() == 2){
+    //     for (int j = 0; j < _domain.size_y + 2; ++j) {
+    //         for (int i = 0; i < _domain.size_x + 2; ++i) {
+    //             if(_cells(i, j).type() == cell_type::HALO){
+    //                 std::cout << '\n' << "*/*/*/*/*/*/*/*/*/*Halo: " << i << ' ' << j;
+    //             }
     //         }
     //     }
     // }
+
 
 
     // Corner cell neighbour assignment
@@ -361,7 +361,7 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
 
     //Scaling
 
-    if ((imax()) !=(numrows - 2) || (jmax()) !=(numcols - 2)) {
+    if ((_domain.domain_size_x) !=(numrows - 2) || (_domain.domain_size_y) !=(numcols - 2)) {
         
         if ((imax() % (numrows - 2) != 0 && imax() % (numrows - 2) != 0)) {
             std::cout << "Error: Improper Scaling, you can only do integer scaling\n";
@@ -369,8 +369,8 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
         }
 
         auto geometry_data_temperary = geometry_data;
-        int x_factor = (imax()) / (numrows - 2);
-        int y_factor = (jmax()) / (numcols - 2);
+        int x_factor = ((_domain.domain_size_x)) / (numrows - 2);
+        int y_factor = ((_domain.domain_size_y)) / (numcols - 2);
 
         int i_temp, j_temp;
         // Interior cells
@@ -437,3 +437,4 @@ const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; 
 
 const std::vector<Cell *> &Grid::halo_cells() const { return _halo_cells; }
 
+///////////ALLL COUT STATEMENTS OUTPUTTED ONLY BY ONE RANK//////////////////////
