@@ -135,7 +135,18 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     // Build up the domain
     
+    num_proc = iproc*jproc;
+
     Communication::init_parallel(argn, args);
+
+    int size = Communication::get_size();  
+
+    if (Communication::get_rank() == 0 && num_proc != size) {
+
+    // if (){ // MAYBE THINK OF COUT FOR ONLY ONE THREAD AND FINALIZING AS INSIDE PARALLEL REGION
+        std::cout << "Error: Mismatch of number of processors and subdomains\n";
+        exit(EXIT_FAILURE);
+    }
     
     Communication::iproc = iproc;
     Communication::jproc = jproc;
@@ -489,13 +500,7 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
 
 	int nproc, size;
     nproc = iproc * jproc;
-    size = Communication::get_size();  
     int domain_params[6];
-
-    if (nproc != size){ // MAYBE THINK OF COUT FOR ONLY ONE THREAD AND FINALIZING AS INSIDE PARALLEL REGION
-        std::cout << "Error: Mismatch of number of processors and subdomains\n";
-        exit(EXIT_FAILURE);
-    }
 
     if (Communication::get_rank() == 0) {
     

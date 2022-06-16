@@ -4,6 +4,12 @@
 geo_file     ChannelWithBFS.pgm
 
 #--------------------------------------------
+#            Number of processes per x and y           
+#--------------------------------------------
+iproc      1
+jproc      1
+
+#--------------------------------------------
 #            size of the domain             
 #--------------------------------------------
 xlength      10
@@ -22,14 +28,14 @@ jmax         20
 # tau: safety factor for time step size control
 #--------------------------------------------
 dt           0.05
-t_end        40.0
+t_end        50.0
 tau          0.5
 
 #--------------------------------------------
 #               output
 # dt_value: time interval for writing files
 #--------------------------------------------
-dt_value     5.0
+dt_value     1.0
 
 #--------------------------------------------
 #               pressure
