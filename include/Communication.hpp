@@ -6,6 +6,8 @@
 class Communication{
     public:
 
+    inline static int iproc, jproc;
+
     static void init_parallel(int argc, char **argv);
 
     static void communicate(Matrix<double> &);

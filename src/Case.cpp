@@ -59,7 +59,6 @@ Case::Case(std::string file_name, int argn, char **args) {
     double beta;    /* thermal expansion co-efficient */
     double alpha;   /* thermal diffusivity */
 
-   
    double wall_temp_a; // a is adiabatic(5)
    double wall_temp_h; // h is hot wall (6)
    double wall_temp_c; // c is cold wall (7)
@@ -111,8 +110,6 @@ Case::Case(std::string file_name, int argn, char **args) {
     
     file.close();
 
-
-
     // bool variable isHeatTransfer checks if heat transfer occurs in the system
     bool isHeatTransfer = false;
     std::map<int, double> wall_temp_a_map, wall_temp_h_map, wall_temp_c_map;
@@ -128,11 +125,8 @@ Case::Case(std::string file_name, int argn, char **args) {
         wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
     }
 
-
     // Set file names for geometry file and output directory
     set_file_names(file_name);
-
-
 
     if (iproc < 1 || jproc < 1){
         std::cout << "Iproc and Jproc are invalid\n";
@@ -141,11 +135,10 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     // Build up the domain
     
-
     Communication::init_parallel(argn, args);
     
-    // Communication::iproc = iproc;
-    // Communication::jproc = jproc;
+    Communication::iproc = iproc;
+    Communication::jproc = jproc;
 
     Domain domain;
     domain.dx = xlength / static_cast<double>(imax);
@@ -265,7 +258,7 @@ void Case::simulate() {
     float progress = 0.0;
     int barWidth = 70;
 
-    output_vtk(timestep, Communication::get_rank()); // write the zeroth timestep
+    // output_vtk(timestep, Communication::get_rank()); // write the zeroth timestep
 
     while(t < _t_end && progress < 1){
         
@@ -327,11 +320,11 @@ void Case::simulate() {
 
         _field.calculate_velocities(_grid);
 
-        if(t >= output_counter) {
+        // if(t >= output_counter) {
 
-            output_vtk(timestep, Communication::get_rank());
-            output_counter += _output_freq;
-        }
+        //     output_vtk(timestep, Communication::get_rank());
+        //     output_counter += _output_freq;
+        // }
 
         // progress =  t/_t_end; // for demonstration only
         // std::cout << "[";
@@ -488,10 +481,15 @@ void Case::output_vtk(int timestep, int my_rank) {
 
 void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int iproc, int jproc) {
 
-	int nproc;
+	int nproc, size;
     nproc = iproc * jproc;
-    // my_rank = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);  
+    size = Communication::get_size();  
     int domain_params[6];
+
+    if (nproc != size){
+        std::cout << "Error: Mismatch of number of processors and subdomains\n";
+        exit(EXIT_FAILURE);
+    }
 
     if (Communication::get_rank() == 0) {
     

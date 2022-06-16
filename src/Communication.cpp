@@ -1,6 +1,5 @@
 #include <mpi.h>
 #include "Communication.hpp"
-#include "Case.hpp"
 
 void Communication::init_parallel(int argc, char **argv){
     MPI_Init(&argc, &argv);
@@ -29,6 +28,7 @@ void Communication::broadcast(double umax) {
 }
 
 void Communication::communicate(Matrix<double> &field){
+
     auto neighbour = _assign_neighbours(get_rank());
 
     int data_imax = field.imax()-2;
@@ -51,8 +51,6 @@ void Communication::communicate(Matrix<double> &field){
         
     }
 
-
-
     if (neighbour['R'] != MPI_PROC_NULL){ // can be removed
         
         for (auto k = 0; k < data_jmax; ++k){
@@ -65,10 +63,7 @@ void Communication::communicate(Matrix<double> &field){
         for (auto k = 0; k < data_jmax; ++k){
             field(data_imax + 1, k + 1) = data_lr_in[k];
         }
-
-        //std::cout << "Communicate R " << get_rank() << '\n';
-
-        
+ 
     }
 
     if (neighbour['T'] != MPI_PROC_NULL){ // can be removed
@@ -110,7 +105,7 @@ int Communication::get_rank(){
 
 int Communication::get_size(){
     int size;
-    MPI_Comm_size(MPI_COMM_WORLD, &size); //WRONG!!!!!
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
     return size;
 }
 
@@ -122,9 +117,7 @@ void Communication::finalize() {
 
 std::map<char, int> Communication::_assign_neighbours(int rank){
     std::map<char, int> neighbour;
-    /**************************************************************************/
-    int iproc = 2, jproc = 2;
-    /*************************************************************************/
+
     int i = rank % iproc;
     int j = (rank - i) / iproc;
 
