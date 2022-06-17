@@ -100,6 +100,12 @@ class Fields {
     /// pressure matrix access and modify
     Matrix<double> &p_matrix();
 
+    /// x-velocity matrix access and modify
+    Matrix<double> &u_matrix();
+
+    /// y-velocity matrix access and modify
+    Matrix<double> &v_matrix();
+
     /// function to check if heat transfer occurs
     bool isHeatTransfer();
 

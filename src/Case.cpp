@@ -268,6 +268,10 @@ void Case::simulate() {
     int iter, n = 0;
     float progress = 0.0;
     int barWidth = 70;
+    Communication::communicate(_field.u_matrix());
+
+    Communication::communicate(_field.v_matrix());
+    Communication::communicate(_field.p_matrix());
 
     output_vtk(timestep, Communication::get_rank()); // write the zeroth timestep
 
@@ -303,7 +307,10 @@ void Case::simulate() {
 
             //std::cout << "P BC " << Communication::get_rank() << '\n';
 
+            Communication::communicate(_field.p_matrix());
             res = _pressure_solver->solve(_field, _grid, _boundaries);
+
+
             
             //std::cout << "P solve done " << Communication::get_rank() << '\n';
             
@@ -437,6 +444,10 @@ void Case::output_vtk(int timestep, int my_rank) {
     vel[2] = 0; // Set z component to 0
 
     // Print Velocity from bottom to top
+    // int rank = Communication::get_rank();
+    // int i_rank = rank % iproc;
+    // int j_rank = (rank - i) / iproc;
+    
     for (int j = 0; j < _grid.domain().size_y + 1; j++) {
         for (int i = 0; i < _grid.domain().size_x + 1; i++) {
             vel[0] = (_field.u(i, j) + _field.u(i, j + 1)) * 0.5;

@@ -33,6 +33,9 @@ Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, 
 
 void Fields::calculate_fluxes(Grid &grid) {
      
+    Communication::communicate(_F);
+    Communication::communicate(_G);
+    
     for (auto currentCell : grid.fluid_cells()) {
         int i = currentCell->i();
         int j = currentCell->j();
@@ -124,8 +127,7 @@ void Fields::calculate_fluxes(Grid &grid) {
         _F(i - 1,j) = _U(i - 1,j);
     }
 
-    Communication::communicate(_F);
-    Communication::communicate(_G);
+
 }
 
 /********************************************************************************
@@ -146,6 +148,8 @@ void Fields::calculate_rs(Grid &grid) {
  ****************************************************************************************/
 void Fields::calculate_velocities(Grid &grid) {
 
+    Communication::communicate(_U);
+    Communication::communicate(_V);
     for (auto currentCell : grid.fluid_cells()){
         int i = currentCell->i();
         int j = currentCell->j();
@@ -157,8 +161,7 @@ void Fields::calculate_velocities(Grid &grid) {
         }
     }
 
-    Communication::communicate(_U);
-    Communication::communicate(_V);
+
 }
 
 /*****************************************************************************************
@@ -231,6 +234,7 @@ double Fields::calculate_dt(Grid &grid) {
 
 void Fields::calculate_temperatures(Grid &grid)
 {
+    Communication::communicate(_T);
 
     double imaxb = grid.imaxb();
     double jmaxb = grid.jmaxb();
@@ -250,7 +254,7 @@ void Fields::calculate_temperatures(Grid &grid)
         _T(i,j) = _dt * (_alpha * Discretization::diffusion(T_temp,i,j) - Discretization::convection_Tu(T_temp,_U,i,j) - Discretization::convection_Tv(T_temp,_V,i,j)) + T_temp(i,j);
     }
 
-    Communication::communicate(_T);
+
     
 }
 
@@ -263,6 +267,11 @@ double &Fields::rs(int i, int j) { return _RS(i, j); }
 double &Fields::t(int i, int j) { return _T(i,j);}
 
 Matrix<double> &Fields::p_matrix() { return _P; }
+
+Matrix<double> &Fields::u_matrix() { return _U; }
+
+Matrix<double> &Fields::v_matrix() { return _V; }
+
 
 bool Fields::isHeatTransfer() { return _isHeatTransfer;}
 
