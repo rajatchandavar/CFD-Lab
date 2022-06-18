@@ -31,22 +31,22 @@ void Communication::communicate(Matrix<double> &field){
 
     auto neighbour = _assign_neighbours(get_rank());
 
-    int data_imax = field.imax()-2;
-    int data_jmax = field.jmax()-2;
+    int data_imax = field.imax();
+    int data_jmax = field.jmax();
 
     MPI_Status status;
     double data_lr_out[data_jmax], data_lr_in[data_jmax], data_tb_out[data_imax], data_tb_in[data_imax];
     if (neighbour['L'] != MPI_PROC_NULL){ // can be removed
         
         for (auto k = 0; k < data_jmax; ++k){
-            data_lr_out[k] = field(1, k + 1);
+            data_lr_out[k] = field(1, k);
         }
 
         MPI_Sendrecv(&data_lr_out, data_jmax, MPI_DOUBLE, neighbour['L'], 0,
                      &data_lr_in, data_jmax, MPI_DOUBLE, neighbour['L'], 0, MPI_COMM_WORLD, &status);
 
         for (auto k = 0; k < data_jmax; ++k){
-            field(0, k + 1) = data_lr_in[k];
+            field(0, k) = data_lr_in[k];
         }
         
     }
@@ -54,14 +54,14 @@ void Communication::communicate(Matrix<double> &field){
     if (neighbour['R'] != MPI_PROC_NULL){ // can be removed
         
         for (auto k = 0; k < data_jmax; ++k){
-            data_lr_out[k] = field(data_imax, k + 1);
+            data_lr_out[k] = field(data_imax - 2, k);
         }
 
         MPI_Sendrecv(&data_lr_out, data_jmax, MPI_DOUBLE, neighbour['R'], 0,
                      &data_lr_in, data_jmax, MPI_DOUBLE, neighbour['R'], 0, MPI_COMM_WORLD, &status);
 
         for (auto k = 0; k < data_jmax; ++k){
-            field(data_imax + 1, k + 1) = data_lr_in[k];
+            field(data_imax - 1, k) = data_lr_in[k];
         }
  
     }
@@ -69,14 +69,14 @@ void Communication::communicate(Matrix<double> &field){
     if (neighbour['T'] != MPI_PROC_NULL){ // can be removed
         
         for (auto k = 0; k < data_imax; ++k){
-            data_tb_out[k] = field(k + 1, data_jmax);
+            data_tb_out[k] = field(k, data_jmax - 2);
         }
 
         MPI_Sendrecv(&data_tb_out, data_imax, MPI_DOUBLE, neighbour['T'], 0,
                      &data_tb_in, data_imax, MPI_DOUBLE, neighbour['T'], 0, MPI_COMM_WORLD, &status);
 
         for (auto k = 0; k < data_imax; ++k){
-            field(k + 1, data_jmax + 1) = data_tb_in[k];
+            field(k, data_jmax - 1) = data_tb_in[k];
         }
         
     }
@@ -84,14 +84,14 @@ void Communication::communicate(Matrix<double> &field){
     if (neighbour['B'] != MPI_PROC_NULL){ // can be removed
         
         for (auto k = 0; k < data_imax; ++k){
-            data_tb_out[k] = field(k + 1, 1);
+            data_tb_out[k] = field(k, 1);
         }
 
         MPI_Sendrecv(&data_tb_out, data_imax, MPI_DOUBLE, neighbour['B'], 0,
                      &data_tb_in, data_imax, MPI_DOUBLE, neighbour['B'], 0, MPI_COMM_WORLD, &status);
 
         for (auto k = 0; k < data_imax; ++k){
-            field(k + 1, 0) = data_tb_in[k];
+            field(k, 0) = data_tb_in[k];
         }
         
     }    
