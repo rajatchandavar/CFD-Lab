@@ -39,7 +39,7 @@ double Discretization::convection_v(const Matrix<double> &U, const Matrix<double
                         _gamma/_dy * ((std::abs(interpolate(V,i,j,0,1)) * (V(i, j) - V(i, j+1)) / 2) -
                         std::abs(interpolate(V, i, j - 1, 0, 1)) * (V(i, j-1)- V(i, j)) / 2) ;
     double duv_dx = 1/ _dx * (((interpolate(U, i, j, 0, 1)) * (interpolate(V, i, j, 1, 0)))  - ( (interpolate(U,i-1,j,0,1)) * (interpolate(V,i-1,j,1,0)))) +
-                            _gamma / _dy * ( (std::abs(interpolate(V,i,j,1,0))*(U(i, j) - U(i, j + 1)) / 2) - 
+                            _gamma / _dx * ( (std::abs(interpolate(U,i,j,0,1))*(V(i, j) - V(i + 1, j)) / 2) - 
                             (std::abs(interpolate(U,i-1,j,0,1)) * (V(i-1, j) - V(i, j)) / 2 ));    
 
     double result = dv2_dy + duv_dx;
