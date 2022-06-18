@@ -48,6 +48,20 @@ Case::Case(std::string file_name, int argn, char **args) {
     int itermax;    /* max. number of iterations for pressure per time step */
     double eps;     /* accuracy bound for pressure*/
 
+    double UIN;     /* inlet velocity */
+    double VIN;     /* outlet velocity */
+    int num_of_walls; /* number of walls */
+
+    double TI;      /* initial temperature */
+    double beta;    /* thermal expansion co-efficient */
+    double alpha;   /* thermal diffusivity */
+
+   
+   double wall_temp_a; // a is adiabatic(5)
+   double wall_temp_h; // h is hot wall (6)
+   double wall_temp_c; // c is cold wall (7)
+    
+    std::vector<double> wall_temp;
     if (file.is_open()) {
 
         std::string var;
@@ -74,15 +88,38 @@ Case::Case(std::string file_name, int argn, char **args) {
                 if (var == "itermax") file >> itermax;
                 if (var == "imax") file >> imax;
                 if (var == "jmax") file >> jmax;
+                if (var == "UIN") file >> UIN;
+                if (var == "VIN") file >> VIN;
+                if (var == "geo_file") file >> _geom_name;
+                if (var == "num_of_walls") file >> num_of_walls;
+                if (var=="wall_temp_5") {file>>wall_temp_a; wall_temp.push_back(wall_temp_a);}
+                if (var=="wall_temp_6") {file>>wall_temp_h; wall_temp.push_back(wall_temp_h);}
+                if (var=="wall_temp_7") {file>>wall_temp_c; wall_temp.push_back(wall_temp_c);}
+                if (var == "TI") file >> TI;
+                if (var == "beta") file >> beta;
+                if (var == "alpha") file >> alpha;
+                
             }
         }
     }
+    
     file.close();
 
+    // bool variable isHeatTransfer checks if heat transfer occurs in the system
+    bool isHeatTransfer = false;
+    std::map<int, double> wall_temp_a_map, wall_temp_h_map, wall_temp_c_map;
+    if (!wall_temp.empty()){
+        isHeatTransfer = true;
+        wall_temp_a_map.insert(std::pair<int, double>(GEOMETRY_PGM::adiabatic_id, wall_temp_a));
+        wall_temp_h_map.insert(std::pair<int, double>(GEOMETRY_PGM::hot_id, wall_temp_h));
+        wall_temp_c_map.insert(std::pair<int, double>(GEOMETRY_PGM::cold_id, wall_temp_c));
+    }
+      
     std::map<int, double> wall_vel;
     if (_geom_name.compare("NONE") == 0) {
         wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
     }
+
 
     // Set file names for geometry file and output directory
     set_file_names(file_name);
@@ -97,7 +134,7 @@ Case::Case(std::string file_name, int argn, char **args) {
     build_domain(domain, imax, jmax);
 
     _grid = Grid(_geom_name, domain);
-    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI);
+    _field = Fields(nu, dt, tau, _grid.domain().size_x, _grid.domain().size_y, UI, VI, PI, TI, _grid, alpha, beta, isHeatTransfer, GX, GY); 
 
     _discretization = Discretization(domain.dx, domain.dy, gamma);
     _pressure_solver = std::make_unique<SOR>(omg);
@@ -110,7 +147,19 @@ Case::Case(std::string file_name, int argn, char **args) {
             std::make_unique<MovingWallBoundary>(_grid.moving_wall_cells(), LidDrivenCavity::wall_velocity));
     }
     if (not _grid.fixed_wall_cells().empty()) {
-        _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+        if (_field.isHeatTransfer()) {
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_a_map));
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_h_map));
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells(), wall_temp_c_map));
+        }
+        else
+            _boundaries.push_back(std::make_unique<FixedWallBoundary>(_grid.fixed_wall_cells()));
+    }
+    if (not _grid.inflow_cells().empty()) {
+        _boundaries.push_back(std::make_unique<InFlowBoundary>(_grid.inflow_cells(), UIN, VIN));
+    }
+    if (not _grid.outflow_cells().empty()) {
+        _boundaries.push_back(std::make_unique<OutFlowBoundary>(_grid.outflow_cells(), GEOMETRY_PGM::POUT));
     }
 }
 
@@ -185,43 +234,78 @@ void Case::simulate() {
     double t = 0.0;
     double dt = _field.dt();
     int timestep = 0;
-    double output_counter = 0.0;
+    double output_counter = _output_freq;
     double res; //Residual for Pressure SOR
     int iter, n = 0;
+    float progress = 0.0;
+    int barWidth = 70;
 
-    output_vtk(timestep);
+    output_vtk(timestep); // write the zeroth timestep
 
-    while(t < _t_end){
+    while(t < _t_end && progress < 1){
         
         dt = _field.calculate_dt(_grid);
         t = t + dt;
         ++timestep;
-        _boundaries[0]->apply(_field);//Boundary conditions of moving wall applied to field
-        _boundaries[1]->apply(_field);//Boundary conditions of fixed wall to field
+       
+        for (int i = 0; i < _boundaries.size(); i++) {
+            _boundaries[i]->apply(_field);
+        }
+
+        if (_field.isHeatTransfer()) { 
+            _field.calculate_temperatures(_grid);
+        }
 
         _field.calculate_fluxes(_grid);
         
-       _field.calculate_rs(_grid);
+        _field.calculate_rs(_grid);
 
         iter = 0;
 
         do{
+
+            for (int i = 0; i < _boundaries.size(); i++) {
+                _boundaries[i]->apply(_field);
+            }
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             iter++;
         }while(res > _tolerance && iter < _max_iter);
 
         if (iter == _max_iter) {
-            std::cout << "Max iteration reached" << "\n";
+            std::cout << "Max iteration reached at " << t<<" s \n";
         }
 
-        std::cout << "Time = " << std::setw(6) << t << " Residual = "<< std::setw(12) << res <<
+        // std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
-        " Iter = " << std::setw(6) << iter << " dt = " << std::setw(6) << dt << '\n';
+        // " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
 
         _field.calculate_velocities(_grid);
-        output_vtk(timestep);
+
+        if(t >= output_counter) {
+
+            output_vtk(timestep);
+            output_counter += _output_freq;
+        }
+
+        progress =  t/_t_end; // for demonstration only
+        std::cout << "[";
+        int pos = barWidth * progress;
+        for (int i = 0; i < barWidth; ++i) {
+            if (i < pos) 
+                std::cout << "=";
+            else if (i == pos) 
+                std::cout << ">";
+            else 
+                std::cout << " ";
+        }
+        std::cout << "] " << int(progress * 100.0) << " %\r";
+        // << " Residual = "<< std::setw(12) << res << 
+        
+        std::cout.flush();
 
     }
+    std::cout<<"\n";
+
 }
 
 void Case::output_vtk(int timestep, int my_rank) {
@@ -260,6 +344,11 @@ void Case::output_vtk(int timestep, int my_rank) {
     Pressure->SetName("pressure");
     Pressure->SetNumberOfComponents(1);
 
+    // Temparature Array
+    vtkDoubleArray *Temparature = vtkDoubleArray::New();
+    Temparature->SetName("temparature");
+    Temparature->SetNumberOfComponents(1);
+
     // Velocity Array
     vtkDoubleArray *Velocity = vtkDoubleArray::New();
     Velocity->SetName("velocity");
@@ -270,6 +359,11 @@ void Case::output_vtk(int timestep, int my_rank) {
         for (int i = 1; i < _grid.domain().size_x + 1; i++) {
             double pressure = _field.p(i, j);
             Pressure->InsertNextTuple(&pressure);
+
+            if (_field.isHeatTransfer()) {
+            double temparature = _field.t(i, j);
+            Temparature->InsertNextTuple(&temparature);
+            }
         }
     }
 
@@ -289,8 +383,25 @@ void Case::output_vtk(int timestep, int my_rank) {
     // Add Pressure to Structured Grid
     structuredGrid->GetCellData()->AddArray(Pressure);
 
+    // Add Temparature to Structured Grid
+    if (_field.isHeatTransfer())
+    structuredGrid->GetCellData()->AddArray(Temparature);
+
     // Add Velocity to Structured Grid
     structuredGrid->GetPointData()->AddArray(Velocity);
+
+
+    /* This section hides all the obstacles (fixed wall cells) on the vtk file */
+
+    for (auto currentCell: _grid.fixed_wall_cells()){
+        int i = currentCell->i();
+        int j = currentCell->j();
+
+        if (j > 0 && i > 0 && j <= _grid.jmax() && i <= _grid.imax()){
+            int id = (j - 1) * _grid.imax() + (i - 1);
+            structuredGrid->BlankCell(id);
+        }
+    }
 
     // Write Grid
     vtkSmartPointer<vtkStructuredGridWriter> writer = vtkSmartPointer<vtkStructuredGridWriter>::New();

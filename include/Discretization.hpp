@@ -54,6 +54,31 @@ class Discretization {
     static double convection_v(const Matrix<double> &U, const Matrix<double> &V, int i, int j);
 
     /**
+     * @brief Convection of Temperature in x direction using donor-cell scheme
+     *
+     * @param[in] Temperature field
+     * @param[in] x-velocity field
+     * @param[in] x index
+     * @param[in] y index
+     * @param[out] result
+     *
+     */
+    static double convection_Tu(const Matrix<double> &T, const Matrix<double> &U, int i, int j);
+
+
+    /**
+     * @brief Convection of Temperature in y direction using donor-cell scheme
+     *
+     * @param[in] Temperature field
+     * @param[in] y-velocity field
+     * @param[in] x index
+     * @param[in] y index
+     * @param[out] result
+     *
+     */
+    static double convection_Tv(const Matrix<double> &T, const Matrix<double> &V, int i, int j);
+
+    /**
      * @brief Laplacian term discretization using central difference
      *
      * @param[in] data to be discretized
