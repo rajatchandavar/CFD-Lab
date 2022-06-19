@@ -529,12 +529,24 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
 
         for (int j = 0; j < jproc; ++j){
             for (int i = 0; i < iproc; ++i){
+
+
                 domain_params[0] = i * cells_per_domain_x;
                 domain_params[1] = j * cells_per_domain_y;
                 domain_params[2] = (i + 1) * cells_per_domain_x + 2;
                 domain_params[3] = (j + 1) * cells_per_domain_y + 2;
                 domain_params[4] = cells_per_domain_x;
                 domain_params[5] = cells_per_domain_y;
+
+                if (imax_domain % iproc != 0 && i == iproc - 1){
+                    domain_params[2] = domain_params[2] + imax_domain % iproc;
+                    domain_params[4] = domain_params[4] + imax_domain % iproc;
+                }
+
+                if (jmax_domain % jproc != 0 && j == jproc - 1){
+                    domain_params[3] = domain_params[3] + jmax_domain % jproc;
+                    domain_params[5] = domain_params[5] + jmax_domain % jproc;
+                }
 
                 rank = i + j * iproc;
                 if (rank != 0)
