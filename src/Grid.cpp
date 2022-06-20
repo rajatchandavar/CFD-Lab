@@ -53,7 +53,7 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         { i = 0; }
         for (int i_geom = _domain.imin; i_geom < _domain.imax; ++i_geom) {
             
-            // Halo
+            // Halo cells 
             if (i_geom == _domain.imin && i_geom != 0 && j_geom != 0 && j_geom != _domain.domain_size_y + 1){
                 _cells(i, j) = Cell(i, j, cell_type::HALO);
                 _halo_cells.push_back(&_cells(i, j));
@@ -117,29 +117,6 @@ void Grid::assign_cell_types(std::vector<std::vector<int>> &geometry_data) {
         }
         ++j;
     }
-
-    // Halo cells in corner of domain
-    // if (_cells(0, 0).type() == cell_type::DEFAULT)
-    //     _cells(0, 0) = Cell(0, 0, cell_type::HALO);
-    // if (_cells(_domain.size_x + 1, 0).type() == cell_type::DEFAULT)
-    //     _cells(_domain.size_x + 1, 0) = Cell(_domain.size_x + 1, 0, cell_type::HALO);
-    // if (_cells(0, _domain.size_y + 1).type() == cell_type::DEFAULT)
-    //     _cells(0, _domain.size_y + 1) = Cell(0, _domain.size_y + 1, cell_type::HALO);
-    // if (_cells(_domain.size_x + 1, _domain.size_y + 1).type() == cell_type::DEFAULT)
-    //     _cells(_domain.size_x + 1, _domain.size_y + 1) = Cell(_domain.size_x + 1, _domain.size_y + 1, cell_type::HALO);
-    
-
-    // if (Communication::get_rank() == 2){
-    //     for (int j = 0; j < _domain.size_y + 2; ++j) {
-    //         for (int i = 0; i < _domain.size_x + 2; ++i) {
-    //             if(_cells(i, j).type() == cell_type::HALO){
-    //                 std::cout << '\n' << "*/*/*/*/*/*/*/*/*/*Halo: " << i << ' ' << j;
-    //             }
-    //         }
-    //     }
-    // }
-
-
 
     // Corner cell neighbour assignment
     // Bottom-Left Corner
@@ -336,21 +313,6 @@ void Grid::parse_geometry_file(std::string filedoc, std::vector<std::vector<int>
     // Fourth line : depth
     ss >> depth;
 
-    // // Following lines : read data from .pgm file if dimensions of .pgm file match with .dat file 
-    // if( numrows == imaxb() && numcols == jmaxb())
-    // {   for (int col = numcols - 1; col > -1; --col) {
-    //         for (int row = 0; row < numrows; ++row) {
-    //             ss >> geometry_data[row][col];
-    //         }
-    //     }
-    // }
-
-    // else 
-    // {
-    //     std::cout<<"Dimensions do not match in the .pgm file and .dat file. Simulation cannot be carried out. \n";
-    //     exit(EXIT_FAILURE);
-    // }
-
     for (int col = numcols - 1; col > -1; --col) {
         for (int row = 0; row < numrows; ++row) {
             ss >> geometry_data[row][col];
@@ -436,5 +398,3 @@ const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }
 
 const std::vector<Cell *> &Grid::halo_cells() const { return _halo_cells; }
-
-///////////ALLL COUT STATEMENTS OUTPUTTED ONLY BY ONE RANK//////////////////////

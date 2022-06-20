@@ -37,28 +37,19 @@ double SOR::solve(Fields &field, Grid &grid, const std::vector<std::unique_ptr<B
         rloc += (val * val);
     }
 
-    //std::cout << "rloc " << rloc << '\n';
-
-
+    // Reduction of sum from all processes
     rloc_sum = Communication::reduce_sum(rloc);
+
+    // Reduction of number of fluid cells from all processes
     size = Communication::reduce_sum(grid.fluid_cells().size());
 
-    //std::cout << "Reduce sum done " << Communication::get_rank() << '\n';
+    // Residual on whole domain computed by rank 0 and broadcasted to other processes
     if(Communication::get_rank() == 0)
     {
         res = rloc_sum / (size);
         res = std::sqrt(res);
-        //std::cout << "res calculated " << res << "size " << size <<'\n';
     }
-
-        // std::cout << "Rank " << Communication::get_rank() << " was here\n";
-
-        MPI_Bcast(&res, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-        // std::cout << "Rank " << Communication::get_rank() << " after bcast\n";
-
-        //Communication::broadcast(res);
-        //std::cout << "BCAST done" << res << "rank " << Communication::get_rank() <<'\n';
-
+    MPI_Bcast(&res, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
     return res;
 }

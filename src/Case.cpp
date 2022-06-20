@@ -258,7 +258,6 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
-    // std::cout << "simulate started\n";
 
     double t = 0.0;
     double dt = _field.dt();
@@ -268,21 +267,20 @@ void Case::simulate() {
     int iter, n = 0;
     float progress = 0.0;
     int barWidth = 70;
-    Communication::communicate(_field.u_matrix());
 
+    // Communication before writing results for zeroth timestep
+    Communication::communicate(_field.u_matrix());
     Communication::communicate(_field.v_matrix());
     Communication::communicate(_field.p_matrix());
 
-    output_vtk(timestep, Communication::get_rank()); // write the zeroth timestep
+    // write the zeroth timestep
+    output_vtk(timestep, Communication::get_rank()); 
 
     while(t < _t_end && progress < 1){
-        
-    // std::cout << "first time boundary called\n";
         
         for (int i = 0; i < _boundaries.size(); i++) {
             _boundaries[i]->apply(_field);
         }
-        // std::cout << "BC applied "<< Communication::get_rank() << '\n';
 
         if (_field.isHeatTransfer()) { 
             _field.calculate_temperatures(_grid);
@@ -290,12 +288,7 @@ void Case::simulate() {
 
         _field.calculate_fluxes(_grid);
 
-        // std::cout << "Fluxes computed " << Communication::get_rank() << '\n';
-
         _field.calculate_rs(_grid);
-
-        // std::cout << "RS computed " << Communication::get_rank() << '\n';
-
 
         iter = 0;
 
@@ -305,25 +298,11 @@ void Case::simulate() {
                 _boundaries[i]->apply(_field);
             }
 
-            //std::cout << "P BC " << Communication::get_rank() << '\n';
-
             Communication::communicate(_field.p_matrix());
             res = _pressure_solver->solve(_field, _grid, _boundaries);
-
-
-            
-            //std::cout << "P solve done " << Communication::get_rank() << '\n';
-            
-        
-            //Compute the partial residual sum and send it to the master process
-            
-            // The master process computes the residual norm of the pressure equation 
-            // r^it and broadcasts it to all the other processes (consider MPI_Allreduce)
             
             iter++;
         }while(res > _tolerance && iter < _max_iter);
-
-        //MIGHT NEED TO TAKE ITER FROM ALL PROCESSES TAKE MAX AND THEN DECIDE TO OUTPUT
 
         if (Communication::get_rank() == 0){
 
@@ -344,34 +323,9 @@ void Case::simulate() {
             output_counter += _output_freq;
         }
 
-        // progress =  t/_t_end; // for demonstration only
-        // std::cout << "[";
-        // int pos = barWidth * progress;
-        // for (int i = 0; i < barWidth; ++i) {
-        //     if (i < pos) 
-        //         std::cout << "=";
-        //     else if (i == pos) 
-        //         std::cout << ">";
-        //     else 
-        //         std::cout << " ";
-        // }
-        // std::cout << "] " << int(progress * 100.0) << " %\r";
-        // << " Residual = "<< std::setw(12) << res << 
-        
-        //std::cout.flush();
-
-        
-        // Compute the maximum values of u(n+1) and v (n+1) for each
-        // process and send them to the master process (local max values)
-        // The master process computes the global maximum values of u(n+1)
-        // and v(n+1) and broadcasts them to all other processes
-
-        //std::cout << "Time step to be done" << Communication::get_rank() << '\n';
-        dt = _field.calculate_dt(_grid);//so that fits all the processes
+        dt = _field.calculate_dt(_grid);
         t = t + dt;
         ++timestep;
-       
-        //std::cout << "Timestep " << t << "Rank:" << Communication::get_rank() << "\n";
     }
     std::cout<<"\n";
     Communication::finalize();
@@ -483,18 +437,6 @@ void Case::output_vtk(int timestep, int my_rank) {
         }
     }
 
-    /* This section hides all the Halo cells */
-
-    // for (auto currentCell: _grid.halo_cells()){
-    //     int i = currentCell->i();
-    //     int j = currentCell->j();
-
-    //     if (j > 0 && i > 0 && j <= _grid.domain().domain_size_y && i <= _grid.domain().domain_size_x){
-    //         int id = (j - 1) * _grid.imax() + (i - 1);
-    //         structuredGrid->BlankCell(id);
-    //     }
-    // }
-
     // Write Grid
     vtkSmartPointer<vtkStructuredGridWriter> writer = vtkSmartPointer<vtkStructuredGridWriter>::New();
 
@@ -518,6 +460,7 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
         int cells_per_domain_x = imax_domain / iproc;
         int cells_per_domain_y = jmax_domain / jproc;
         
+        // Computing domain parameters for rank 0
         domain.imin = 0;
         domain.jmin = 0;
         domain.imax = cells_per_domain_x + 2;
@@ -530,25 +473,26 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
         for (int j = 0; j < jproc; ++j){
             for (int i = 0; i < iproc; ++i){
 
+                domain_params[0] = i * cells_per_domain_x; // IMIN
+                domain_params[1] = j * cells_per_domain_y; // JMIN
+                domain_params[2] = (i + 1) * cells_per_domain_x + 2; //IMAX
+                domain_params[3] = (j + 1) * cells_per_domain_y + 2; //JMAX
+                domain_params[4] = cells_per_domain_x; //SIZE_X
+                domain_params[5] = cells_per_domain_y; //SIZE_Y
 
-                domain_params[0] = i * cells_per_domain_x;
-                domain_params[1] = j * cells_per_domain_y;
-                domain_params[2] = (i + 1) * cells_per_domain_x + 2;
-                domain_params[3] = (j + 1) * cells_per_domain_y + 2;
-                domain_params[4] = cells_per_domain_x;
-                domain_params[5] = cells_per_domain_y;
-
+                // Handling case when imax, jmax not exactly divisible by iproc, jproc respectively
                 if (imax_domain % iproc != 0 && i == iproc - 1){
                     domain_params[2] = domain_params[2] + imax_domain % iproc;
                     domain_params[4] = domain_params[4] + imax_domain % iproc;
                 }
-
                 if (jmax_domain % jproc != 0 && j == jproc - 1){
                     domain_params[3] = domain_params[3] + jmax_domain % jproc;
                     domain_params[5] = domain_params[5] + jmax_domain % jproc;
                 }
 
                 rank = i + j * iproc;
+
+                // Sending domain parameters to all processes other than 0
                 if (rank != 0)
                     MPI_Send(&domain_params, 6, MPI_INT, rank, 0, MPI_COMM_WORLD);
             }
@@ -557,6 +501,7 @@ void Case::build_domain(Domain &domain, int imax_domain, int jmax_domain, int ip
 
     else {
         MPI_Status status;
+        // Receiving domain parameters from rank 0
         MPI_Recv(&domain_params, 6, MPI_INT, 0, 0, MPI_COMM_WORLD, &status);
 
         domain.imin = domain_params[0];

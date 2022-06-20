@@ -35,8 +35,18 @@ void Communication::communicate(Matrix<double> &field){
     int data_jmax = field.jmax();
 
     MPI_Status status;
+    
+    /* 
+    data_lr_out - array to be sent to neighbouring processes in left / right direction
+    data_lr_in - array to be received from neighbouring processes from left / right direction
+    data_tb_out - array to be sent to neighbouring processes in top / bottom direction
+    data_tb_in - array to be received from neighbouring processes from top / bottom direction
+    */
+
     double data_lr_out[data_jmax], data_lr_in[data_jmax], data_tb_out[data_imax], data_tb_in[data_imax];
-    if (neighbour['L'] != MPI_PROC_NULL){ // can be removed
+    
+    // Communication in Left direction
+    if (neighbour['L'] != MPI_PROC_NULL){
         
         for (auto k = 0; k < data_jmax; ++k){
             data_lr_out[k] = field(1, k);
@@ -51,7 +61,8 @@ void Communication::communicate(Matrix<double> &field){
         
     }
 
-    if (neighbour['R'] != MPI_PROC_NULL){ // can be removed
+    // Communication in Right direction
+    if (neighbour['R'] != MPI_PROC_NULL){
         
         for (auto k = 0; k < data_jmax; ++k){
             data_lr_out[k] = field(data_imax - 2, k);
@@ -66,7 +77,9 @@ void Communication::communicate(Matrix<double> &field){
  
     }
 
-    if (neighbour['T'] != MPI_PROC_NULL){ // can be removed
+
+    // Communication in Top direction
+    if (neighbour['T'] != MPI_PROC_NULL){
         
         for (auto k = 0; k < data_imax; ++k){
             data_tb_out[k] = field(k, data_jmax - 2);
@@ -81,7 +94,8 @@ void Communication::communicate(Matrix<double> &field){
         
     }
 
-    if (neighbour['B'] != MPI_PROC_NULL){ // can be removed
+    // Communication in Bottom direction
+    if (neighbour['B'] != MPI_PROC_NULL){
         
         for (auto k = 0; k < data_imax; ++k){
             data_tb_out[k] = field(k, 1);
