@@ -14,6 +14,35 @@ __device__ double diffusion(double *A, int i, int j, double dx, double dy, int *
     return result;
 }
 
+__device__ double convection_u(double *U, double *V, double gamma, int i, int j, double dx, double dy, int *size_x)
+{
+
+    double du2_dx = 1/ dx * (pow(interpolate(U,i,j,1,0,size_x), 2) - pow(interpolate(U,i,j,-1,0, size_x), 2)) +
+                        gamma/dx * ((std::abs(interpolate(U,i,j,1,0,size_x)) * (at(U,i, j) - at(U,i + 1, j)) / 2) -
+                         std::abs(interpolate(U,i,j,-1,0,size_x))*(at(U,i - 1, j)-at(U,i, j)) / 2) ;
+    double duv_dy = 1/ dy * (((interpolate(V,i,j,1,0,size_x)) * (interpolate(U,i,j,0,1,size_x)))  - ( (interpolate(V,i,j-1,1,0,size_x)) * (interpolate(U,i,j,0,-1, size_x)))  ) +
+                             gamma / dy * ( (std::abs(interpolate(V,i,j,1,0,size_x))*(at(U,i, j) - at(U,i, j + 1)) / 2) - 
+                             (std::abs(interpolate(V,i,j-1,1,0,size_x)) * (at(U,i, j - 1) - at(U,i, j)) / 2 ));    
+
+     double result = du2_dx + duv_dy;
+     return result;
+}
+
+__device__ double convection_v(double *U, double *V, double gamma, int i, int j, double dx, double dy, int *size_x)
+{
+
+    double dv2_dy = 1/ dy * (pow(interpolate(V,i,j,0,1,size_x), 2) - pow(interpolate(V,i,j-1,0,1,size_x), 2)) +
+                        gamma/dy * ((std::abs(interpolate(V,i,j,0,1,size_x)) * (at(V,i, j) - at(V,i, j+1)) / 2) -
+                        std::abs(interpolate(V, i, j - 1, 0, 1,size_x)) * (at(V,i, j-1)- at(V,i, j)) / 2) ;
+    double duv_dx = 1/ dx * (((interpolate(U, i, j, 0, 1, size_x)) * (interpolate(V, i, j, 1, 0,size_x)))  - ( (interpolate(U,i-1,j,0,1,size_x)) * (interpolate(V,i-1,j,1,0,size_x)))) +
+                            gamma / dx * ( (std::abs(interpolate(U,i,j,0,1,size_x))*(at(V,i, j) - at(V,i + 1, j)) / 2) - 
+                            (std::abs(interpolate(U,i-1,j,0,1,size_x)) * (at(V,i-1, j) - at(V,i, j)) / 2 ));    
+
+    double result = dv2_dy + duv_dx;
+    return result;
+}
+
+
 __device__ double convection_Tu(double *T, double *U, int i, int j, double dx, double dy, double gamma, int *size_x)
 {
     double result;
@@ -229,9 +258,7 @@ __global__ void calc_T_kernel(double * T, double *T_temp, double *U, double *V, 
     int j = blockIdx.y * blockDim.y + threadIdx.y;
     if (i < *size_x && j < *size_y)
         at(T,i,j) = (*dt) * (*alpha * diffusion(T_temp,i,j, *dx, *dy, size_x) - convection_Tu(T_temp,U,i,j,*dx, *dy, *gamma, size_x) - convection_Tv(T_temp,V,i,j, *dx, *dy, *gamma, size_x)) + at(T_temp, i,j);
-    
-}
-
+}   
 CUDA_solver::CUDA_solver(Fields &field, Grid &grid){
 
     block_size = dim3(BLOCK_SIZE);
@@ -249,6 +276,8 @@ CUDA_solver::CUDA_solver(Fields &field, Grid &grid){
     cudaMalloc((void **)&U, grid_size * sizeof(double));
     cudaMalloc((void **)&V, grid_size * sizeof(double));
     cudaMalloc((void **)&P, grid_size * sizeof(double));
+    cudaMalloc((void **)&F, grid_size * sizeof(double));
+    cudaMalloc((void **)&G, grid_size * sizeof(double));
 
 
     cudaMalloc((void **)&dx, sizeof(double));
@@ -355,8 +384,78 @@ __global__ apply_boundary() {
 
 }
 
-void CUDA_solver::calc_fluxes(){
+__device__ void calc_fluxes(double *F, double *G, double *U, double *V, double gx, double gy, int i, int j, double dx, double dy, int *size_x, int *size_y, double gamma, double beta, double nu, double dt, bool isHeatTransfer){
+
+
+
+    at(F,i,j) = at(U,i,j) + dt * (nu*diffusion(U,i,j,dx,dy,size_x) - convection_u(U,V,gamma,i,j,dx,dy,size_x) + gx);
+    at(G,i,j) = at(V,i,j) + dt * (nu*diffusion(V,i,j,dx,dy,size_x) - convection_v(U,V,gamma,i,j,dx,dy,size_x) + gy);
     
+    if(isHeatTransfer){
+       
+            at(F,i,j) = at(F,i,j) - beta * dt / 2.0 * (at(T,(i,j) + at(T,(i + 1, j)) * gx - dt * gx;
+            at(G,i,j) = at(G,i,j) - beta * dt / 2.0 * (at(T,(i,j) + at(T,(i, j + 1)) * gy - dt * gy;
+    
+    }
+    
+    if(at(geometry_data,i,j) == 3)
+    {
+         // B_NE fixed wall corner cell with fluid cells on the North and East directions 
+
+        if(at(geometry_data,i,j+1)==0 && at(geometry_data,i+1,j)==0){
+            at(F,i, j) = at(U,i, j);
+            at(G,i, j) = at(V,i, j);
+        }
+
+        // B_SE fixed wall corner cell with fluid cells on the South and East directions 
+
+       else if(at(geometry_data,i,j-1)==0 && at(geometry_data,i+1,j)==0){
+            at(F,i, j) = at(U,i, j);
+            at(G,i,j - 1) = at(V,i,j - 1);
+
+        }
+
+        // B_NW fixed wall corner cell with fluid cells on the North and West directions 
+
+        else if(at(geometry_data,i,j+1)==0 && at(geometry_data,i-1,j)==0){
+            at(F,i - 1, j) = at(U,i - 1, j);
+            at(G,i, j) = at(V,i, j);
+        }
+
+        // B_SW fixed wall corner cell with fluid cells on the South and West directions 
+
+        else if(at(geometry_data,i,j-1)==0 && at(geometry_data,i-1,j)==0){
+            at(F,i - 1, j) = at(U,i - 1, j);
+            at(G,i, j - 1) = at(V,i, j - 1);
+        }
+        else if(at(geometry_data,i,j+1)==0)
+            at(G,i,j) = at(V,i,j);
+
+        else if(at(geometry_data,i,j-1)==0))
+            at(G,i,j - 1) = at(V,i,j - 1);
+
+        else if(at(geometry_data,i-1,j)==0)
+            at(F,i - 1, j) = at(U,i - 1, j);
+
+        else if(at(geometry_data,i+1,j)==0)
+            at(F,i, j) = at(U,i, j);
+
+    }
+
+    else if(at(geometry_data,i,j) == 8)
+    {
+        at(G,i,j - 1) = at(V,i,j - 1);
+    }
+    else if (at(geometry_data,i,j) == 1)
+    {
+        at(F,i,j) = at(U,i,j);
+    }
+
+    else if (at(geometry_data,i,j) == 2)
+    {
+
+        at(F,i - 1,j) = at(U,i - 1,j);
+    }
 }
 
 void CUDA_solver::calc_rs(){
@@ -370,6 +469,11 @@ void CUDA_solver::post_process(Fields &field){
 CUDA_solver::~CUDA_solver(){
     cudaFree(geometry_data);
     cudaFree(T);
+    cudaFree(U);
+    cudaFree(V);
+    cudaFree(P);
+    cudaFree(F);
+    cudaFree(G);
     cudaFree(T_temp);
     cudaFree(dx);
     cudaFree(dy);
