@@ -11,10 +11,16 @@ option(gpp9 "compile with gpp9 filesystem" ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+set(CMAKE_CUDA_ARCHITECTURES 86)
+enable_language(CUDA)
+
 # Creating the executable of our project and the required dependencies
 # the executable is called fluidchen
 file(GLOB files src/*.cpp)
-add_executable(fluidchen ${files})
+file(GLOB cuda_files src/*.cu)
+add_executable(fluidchen ${files} ${cuda_files})
+
+set_property(TARGET fluidchen PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 target_compile_definitions(fluidchen PUBLIC -Dsolution_liddriven)
 target_compile_definitions(fluidchen PUBLIC -Dsolution_energy)
@@ -25,6 +31,9 @@ target_compile_definitions(fluidchen PUBLIC -Dsolution_parallelization)
 # find_package(MPI)
 # Require a package
 find_package(MPI REQUIRED)
+find_package(CUDA REQUIRED)
+
+
 # Find a package with different components e.g. BOOST
 # find_package(Boost COMPONENTS filesystem REQUIRED)
 
@@ -50,6 +59,8 @@ endif()
 
 # Add include directory
 target_include_directories(fluidchen PUBLIC include)
+include_directories(${CUDA_INCLUDE_DIRS})
+include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX /usr/local)
@@ -58,6 +69,7 @@ endif()
 # if you use external libraries you have to link them like
 target_link_libraries(fluidchen PRIVATE MPI::MPI_CXX)
 target_link_libraries(fluidchen PRIVATE ${VTK_LIBRARIES})
+target_link_libraries(fluidchen ${CUDA_RUNTIME_LIBRARY})
 
 install(TARGETS fluidchen DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 # If you write tests, you can include your subdirectory (in this case tests) as done here

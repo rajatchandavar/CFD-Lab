@@ -114,6 +114,8 @@ class Discretization {
      */
     static double interpolate(const Matrix<double> &A, int i, int j, int i_offset, int j_offset);
 
+    double get_gamma();
+
   private:
     static double _dx;
     static double _dy;

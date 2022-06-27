@@ -15,7 +15,7 @@ Grid::Grid(std::string geom_name, Domain &domain) {
     _cells = Matrix<Cell>(_domain.size_x + 2, _domain.size_y + 2);
 
     if (geom_name.compare("NONE")) {
-        std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
+        geometry_data = std::vector<std::vector<int>>(_domain.domain_size_x + 2,
                                                     std::vector<int>(_domain.domain_size_y + 2, 0));
         parse_geometry_file(geom_name, geometry_data); //do job done by build_lid.. cavity here
         assign_cell_types(geometry_data);
@@ -26,8 +26,8 @@ Grid::Grid(std::string geom_name, Domain &domain) {
 }
 
 void Grid::build_lid_driven_cavity() {
-    std::vector<std::vector<int>> geometry_data(_domain.domain_size_x + 2,
-                                                std::vector<int>(_domain.domain_size_y + 2, 0));
+    geometry_data = std::vector<std::vector<int>>(_domain.domain_size_x + 2,
+                                                    std::vector<int>(_domain.domain_size_y + 2, 0));
 
     for (int i = 0; i < _domain.domain_size_x + 2; ++i) {
         for (int j = 0; j < _domain.domain_size_y + 2; ++j) {
@@ -387,3 +387,7 @@ const std::vector<Cell *> &Grid::moving_wall_cells() const { return _moving_wall
 const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 
 const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }
+
+std::vector<std::vector<int>> Grid::get_geometry_data(){
+    return geometry_data;
+}

@@ -1,6 +1,6 @@
 #pragma once
 #include "Enums.hpp"
-#include <mpi.h>
+// #include <mpi.h>
 
 /**
  * @brief Data structure that holds geometrical information

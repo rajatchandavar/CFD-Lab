@@ -105,3 +105,5 @@ double Discretization::interpolate(const Matrix<double> &A, int i, int j, int i_
 
 
 }
+
+double Discretization::get_gamma() {return _gamma;}

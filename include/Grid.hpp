@@ -86,6 +86,8 @@ class Grid {
      */
     const std::vector<Cell *> &outflow_cells() const;
 
+    std::vector<std::vector<int>> get_geometry_data();
+
   private:
     /**@brief Default lid driven cavity case generator
      *
@@ -111,4 +113,6 @@ class Grid {
 
     double _dx;
     double _dy;
+
+    std::vector<std::vector<int>> geometry_data;
 };

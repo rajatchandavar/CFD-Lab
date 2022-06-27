@@ -12,6 +12,7 @@
 #include <map>
 #include <vector>
 
+#include "CUDA_solver.cuh"
 #ifdef GCC_VERSION_9_OR_HIGHER
 namespace filesystem = std::filesystem;
 #else
@@ -237,14 +238,14 @@ void Case::simulate() {
     double output_counter = _output_freq;
     double res; //Residual for Pressure SOR
     int iter, n = 0;
-    float progress = 0.0;
+    double progress = 0.0;
     int barWidth = 70;
 
+    CUDA_solver cuda_solver(_field, _grid);
     output_vtk(timestep); // write the zeroth timestep
 
     while(t < _t_end && progress < 1){
-        
-        dt = _field.calculate_dt(_grid);
+        // dt = _field.calculate_dt(_grid);
         t = t + dt;
         ++timestep;
        
@@ -253,7 +254,10 @@ void Case::simulate() {
         }
 
         if (_field.isHeatTransfer()) { 
-            _field.calculate_temperatures(_grid);
+            // _field.calculate_temperatures(_grid);
+            cuda_solver.pre_process(_field, _grid, _discretization);
+            cuda_solver.calc_T();
+            cuda_solver.post_process(_field);
         }
 
         _field.calculate_fluxes(_grid);
@@ -275,9 +279,9 @@ void Case::simulate() {
             std::cout << "Max iteration reached at " << t<<" s \n";
         }
 
-        // std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
+        std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
-        // " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
 
         _field.calculate_velocities(_grid);
 
@@ -287,21 +291,21 @@ void Case::simulate() {
             output_counter += _output_freq;
         }
 
-        progress =  t/_t_end; // for demonstration only
-        std::cout << "[";
-        int pos = barWidth * progress;
-        for (int i = 0; i < barWidth; ++i) {
-            if (i < pos) 
-                std::cout << "=";
-            else if (i == pos) 
-                std::cout << ">";
-            else 
-                std::cout << " ";
-        }
-        std::cout << "] " << int(progress * 100.0) << " %\r";
-        // << " Residual = "<< std::setw(12) << res << 
+        // progress =  t/_t_end; // for demonstration only
+        // std::cout << "[";
+        // int pos = barWidth * progress;
+        // for (int i = 0; i < barWidth; ++i) {
+        //     if (i < pos) 
+        //         std::cout << "=";
+        //     else if (i == pos) 
+        //         std::cout << ">";
+        //     else 
+        //         std::cout << " ";
+        // }
+        // std::cout << "] " << int(progress * 100.0) << " %\r";
+        // // << " Residual = "<< std::setw(12) << res << 
         
-        std::cout.flush();
+        // std::cout.flush();
 
     }
     std::cout<<"\n";
@@ -368,7 +372,7 @@ void Case::output_vtk(int timestep, int my_rank) {
     }
 
     // Temp Velocity
-    float vel[3];
+    double vel[3];
     vel[2] = 0; // Set z component to 0
 
     // Print Velocity from bottom to top

@@ -100,8 +100,18 @@ class Fields {
     /// pressure matrix access and modify
     Matrix<double> &p_matrix();
 
+    /// Temperature matrix access and modify
+    Matrix<double> &t_matrix();
+
+    Matrix<double> &u_matrix();
+
+    Matrix<double> &v_matrix();
+
+
     /// function to check if heat transfer occurs
     bool isHeatTransfer();
+
+    double get_alpha();
 
   private:
     /// x-velocity matrix
