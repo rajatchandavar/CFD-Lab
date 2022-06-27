@@ -4,6 +4,7 @@
 *~
 *.log
 build
+vtk
 .vscode
 *.DS_STORE
 CMakeFiles
