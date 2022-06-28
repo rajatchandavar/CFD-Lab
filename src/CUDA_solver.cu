@@ -67,10 +67,13 @@ dim3 CUDA_solver::get_num_blocks_2d(int size_x, int size_y){
 
 //Boundaries
 
-__global__ void FixedWallBoundary(double *U, double *V, double *P, double *T, int i, int j, int *geometry_data,
+__global__ void FixedWallBoundary(double *U, double *V, double *P, double *T, int *geometry_data,
 int *fluid_id, int *moving_wall_id, int *fixed_wall_id, int *inflow_id, int *outflow_id, int *adiabatic_id, int *hot_id,
-int *cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, bool isHeatTransfer) {
-
+int *cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int isHeatTransfer, int *size_x, int
+*size_y) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < *size_x && j < *size_y) {
         // obstacles B_NE (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the North and East directions 
 
@@ -217,7 +220,7 @@ int *cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, boo
         * Right Wall B_W (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on the West direction *
         ***********************************************************************************************/
 
-        else if(at(geometry_data,i-1,j))==0){
+        else if(at(geometry_data,i-1,j)==0){
             //Since u grid is staggered, the u velocity of cells to left of ghost layer should be set to 0.
             at(U,i - 1, j) = 0.0; 
             at(V,i, j) = -at(V,i - 1, j);
@@ -233,28 +236,35 @@ int *cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, boo
             }
         }
 }
-
-__global__ void MovingWallBoundary(double *U, double *V, double *P, double *T, int i, int j, double *wall_velocity) {
-        
-        at(U,i, j) = 2 * wall_velocity- at(U,i, j-1);
+}
+__global__ void MovingWallBoundary(double *U, double *V, double *P, double *T, double *wall_velocity, int *size_x, int *size_y) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < *size_x && j < *size_y) {       
+        at(U,i, j) = 2*(*wall_velocity)- at(U,i, j-1);
         //Since v grid is staggered, the v velocity of cells to below of ghost layer should be set to 0.
         at(V,i,j - 1) = 0.0;
         at(P,i,j) = at(P,i, j-1);
 }
-
-__global__ void InFlowBoundary(double *U, double *V, double *P, double *T, int i, int j, double *UIN, double *VIN) {
-        at(U,i,j) = UIN;
-        at(V,i,j) = 2 * VIN - at(V,i + 1, j);
+}
+__global__ void InFlowBoundary(double *U, double *V, double *P, double *T, double *UIN, double *VIN, int *size_x, int *size_y) {
+     int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < *size_x && j < *size_y) {
+        at(U,i,j) = (*UIN);
+        at(V,i,j) = 2*(*VIN) - at(V,i + 1, j);
         at(P,i,j) = at(P,i + 1, j);
 }
-
-__global__ void OutFlowBoundary(double *U, double *V, double *P, double *T, int i, int j, double *POUT) {
-
+}
+__global__ void OutFlowBoundary(double *U, double *V, double *P, double *T, double *POUT, int *size_x, int *size_y) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < *size_x && j < *size_y) {
             at(U,i,j) = at(U,i - 1,j);
             at(V,i,j) = at(V,i - 1,j);
-            at(P,i,j) = 2 * POUT - at(P,i - 1, j);
+            at(P,i,j) = 2*(*POUT) - at(P,i - 1, j);
 }
-
+}
 __global__ void calc_T_kernel(double * T, double *T_temp, double *U, double *V, double *dx, double *dy, double *dt, double *alpha, double *gamma, int *size_x, int *size_y){
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -303,7 +313,7 @@ CUDA_solver::CUDA_solver(Fields &field, Grid &grid){
     cudaMalloc((void **)&wall_temp_a, sizeof(double));
     cudaMalloc((void **)&wall_temp_h, sizeof(double));
     cudaMalloc((void **)&wall_temp_c, sizeof(double));
-    cudaMalloc((void **)&isHeatTransfer, sizeof(bool));
+    cudaMalloc((void **)&isHeatTransfer, sizeof(int));
 
     cudaMalloc((void **)&wall_velocity, sizeof(double));
     cudaMalloc((void **)&UIN, sizeof(double));
@@ -335,7 +345,7 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(size_x, &grid_size_x, sizeof(int),cudaMemcpyHostToDevice);
     cudaMemcpy(size_y, &grid_size_y, sizeof(int),cudaMemcpyHostToDevice);
 
-    int var = GEOMETRY_PGM::moving_wall_id;
+    var = GEOMETRY_PGM::moving_wall_id;
     cudaMemcpy(moving_wall_id, &var, sizeof(int),cudaMemcpyHostToDevice);
     var = GEOMETRY_PGM::fixed_wall_id;
     cudaMemcpy(fixed_wall_id, &var, sizeof(int),cudaMemcpyHostToDevice);
@@ -350,16 +360,16 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     var = GEOMETRY_PGM::adiabatic_id;
     cudaMemcpy(adiabatic_id, &var, sizeof(int),cudaMemcpyHostToDevice);
 
-    double var = wall_temp_a;
+    var = wall_temp_a;
     cudaMemcpy(wall_temp_a, &var, sizeof(double),cudaMemcpyHostToDevice);
     var = wall_temp_h;
     cudaMemcpy(wall_temp_h, &var, sizeof(double),cudaMemcpyHostToDevice);
     var = wall_temp_c;
     cudaMemcpy(wall_temp_c, &var, sizeof(double),cudaMemcpyHostToDevice);
-    int var = field.isHeatTransfer();
+    var = field.isHeatTransfer();
     cudaMemcpy(isHeatTransfer, &var, sizeof(int),cudaMemcpyHostToDevice);
 
-    double var = LidDrivenCavity::wall_velocity;
+    var = LidDrivenCavity::wall_velocity;
     cudaMemcpy(wall_velocity, &var, sizeof(double),cudaMemcpyHostToDevice);
     var = UIN;
     cudaMemcpy(UIN, &var, sizeof(double),cudaMemcpyHostToDevice);
@@ -374,41 +384,40 @@ void CUDA_solver::calc_T(){
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
     calc_T_kernel<<<num_blocks_2d, block_size_2d>>>(T, T_temp, U, V, dx, dy, dt, alpha, gamma, size_x, size_y);
 }
-void apply_boundary() {
+void CUDA_solver::apply_boundary() {
 
-    int i = blockIdx.x * blockDim.x + threadIdx.x;
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
 
-    if (i < *size_x && j < *size_y) {
+       // if (at(geometry_data,i,j)==3 || at(geometry_data,i,j)==5 || at(geometry_data,i,j)== 6 || at(geometry_data,i,j)== 7)
+            FixedWallBoundary<<<num_blocks_2d, block_size_2d>>>(U, V, P, T, geometry_data, fluid_id, moving_wall_id, fixed_wall_id, inflow_id, outflow_id, adiabatic_id, hot_id, cold_id, wall_temp_a, wall_temp_h, wall_temp_c, isHeatTransfer, size_x, size_y);
 
-        if (at(geometry_data,i,j)==3 || at(geometry_data,i,j)==5 || at(geometry_data,i,j)== 6 || at(geometry_data,i,j)== 7)
-            FixedWallBoundary<<<num_blocks_2d, block_size_2d>>>(U, V, P, T, i, j, geometry_data, fluid_id, moving_wall_id, fixed_wall_id, inflow_id, outflow_id, adiabatic_id, hot_id, cold_id, wall_temp_a, wall_temp_h, wall_temp_c, isHeatTransfer);
+       // else if (at(geometry_data,i,j)==8)
+            MovingWallBoundary<<<num_blocks_2d, block_size_2d>>>(U, V, P, T, wall_velocity, size_x, size_y);
 
-        else if (at(geometry_data,i,j)==8)
-            MovingWallBoundary<<<num_blocks_2d, block_size_2d>>>(U, V, P, T, i, j, wall_velocity);
+       // else if (at(geometry_data,i,j)==1)
+            InFlowBoundary<<<num_blocks_2d, block_size_2d>>>(U, V, P, T, UIN, VIN, size_x, size_y);
 
-        else if (at(geometry_data,i,j)==1)
-            InFlowBoundary<<<num_blocks_2d, block_size_2d>>>(U, V, P, T, i, j, UIN, VIN);
-
-        else (at(geometry_data,i,j)==2)
-            OutFlowBoundary<<<num_blocks_2d, block_size_2d>>>(U, V, P, T, i, j, POUT);
-
-    }
+       // else (at(geometry_data,i,j)==2)
+            OutFlowBoundary<<<num_blocks_2d, block_size_2d>>>(U, V, P, T, POUT, size_x, size_y);
 
 }
 
-__device__ void calc_fluxes(double *F, double *G, double *U, double *V, double gx, double gy, int i, int j, double dx, double dy, int *size_x, int *size_y, double gamma, double beta, double nu, double dt, bool isHeatTransfer){
+__global__ void calc_fluxes(double *F, double *G, double *U, double *V, double *T, double *gx, double *gy, double *dx,
+double *dy, int *size_x, int *size_y, double *gamma, double *beta, double *nu, double *dt, int isHeatTransfer, int
+*geometry_data){
+
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < *size_x && j < *size_y) {
 
 
-
-    at(F,i,j) = at(U,i,j) + dt * (nu*diffusion(U,i,j,dx,dy,size_x) - convection_u(U,V,gamma,i,j,dx,dy,size_x) + gx);
-    at(G,i,j) = at(V,i,j) + dt * (nu*diffusion(V,i,j,dx,dy,size_x) - convection_v(U,V,gamma,i,j,dx,dy,size_x) + gy);
+    at(F,i,j) = at(U,i,j) + (*dt) * (*nu*diffusion(U,i,j,*dx,*dy,*size_x) - convection_u(U,V,*gamma,i,j,*dx,*dy,*size_x) + (*gx));
+    at(G,i,j) = at(V,i,j) + (*dt) * (*nu*diffusion(V,i,j,*dx,*dy,*size_x) - convection_v(U,V,*gamma,i,j,*dx,*dy,*size_x) + gy);
     
-    if(isHeatTransfer){
+    if(isHeatTransfer==1){
        
-            at(F,i,j) = at(F,i,j) - beta * dt / 2.0 * (at(T,i,j) + at(T,i + 1, j)) * gx - dt * gx;
-            at(G,i,j) = at(G,i,j) - beta * dt / 2.0 * (at(T,i,j) + at(T,i, j + 1)) * gy - dt * gy;
+            at(F,i,j) = at(F,i,j) - (*beta) * (*dt) / 2.0 * (at(T,i,j) + at(T,i + 1, j)) * (*gx) - (*dt) * (*gx);
+            at(G,i,j) = at(G,i,j) - (*beta) * (*dt) / 2.0 * (at(T,i,j) + at(T,i, j + 1)) * (*gy) - (*dt) * (*gy);
     
     }
     
@@ -445,7 +454,7 @@ __device__ void calc_fluxes(double *F, double *G, double *U, double *V, double g
         else if(at(geometry_data,i,j+1)==0)
             at(G,i,j) = at(V,i,j);
 
-        else if(at(geometry_data,i,j-1)==0))
+        else if(at(geometry_data,i,j-1)==0)
             at(G,i,j - 1) = at(V,i,j - 1);
 
         else if(at(geometry_data,i-1,j)==0)
@@ -470,6 +479,7 @@ __device__ void calc_fluxes(double *F, double *G, double *U, double *V, double g
 
         at(F,i - 1,j) = at(U,i - 1,j);
     }
+}
 }
 
 void CUDA_solver::calc_rs(){

@@ -37,14 +37,16 @@ class CUDA_solver{
     double *UIN;
     double *VIN;
 
-    double *wall_temp_a, *wall_temp_h, *wall_temp_c;
+    double *wall_temp_a;
+    double *wall_temp_c;
+    double *wall_temp_h;
 
     int domain_size, grid_size, grid_size_x, grid_size_y;
     double *dx, *dy, *dt, *gamma, *alpha;
     int *size_x, *size_y;
     double *wall_velocity;
 
-    int isHeatTransfer;
+    int *isHeatTransfer;
 
     dim3 block_size, num_blocks, block_size_2d, num_blocks_2d;
 
