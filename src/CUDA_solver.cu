@@ -68,8 +68,8 @@ dim3 CUDA_solver::get_num_blocks_2d(int size_x, int size_y){
 //Boundaries
 
 __global__ void FixedWallBoundary(double *U, double *V, double *P, double *T, int *geometry_data,
-int *fluid_id, int *moving_wall_id, int *fixed_wall_id, int *inflow_id, int *outflow_id, int *adiabatic_id, int *hot_id,
-int *cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int isHeatTransfer, int *size_x, int
+int *fluid_id, int *moving_wall_id, int *fixed_wall_id, int *inflow_id, int *outflow_id, int adiabatic_id, int hot_id,
+int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int isHeatTransfer, int *size_x, int
 *size_y) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -411,8 +411,8 @@ double *dy, int *size_x, int *size_y, double *gamma, double *beta, double *nu, d
     if (i < *size_x && j < *size_y) {
 
 
-    at(F,i,j) = at(U,i,j) + (*dt) * (*nu*diffusion(U,i,j,*dx,*dy,*size_x) - convection_u(U,V,*gamma,i,j,*dx,*dy,*size_x) + (*gx));
-    at(G,i,j) = at(V,i,j) + (*dt) * (*nu*diffusion(V,i,j,*dx,*dy,*size_x) - convection_v(U,V,*gamma,i,j,*dx,*dy,*size_x) + gy);
+    at(F,i,j) = at(U,i,j) + (*dt) * (*nu*diffusion(U,i,j,dx,dy,*size_x) - convection_u(U,V,gamma,i,j,dx,dy,*size_x) + (*gx));
+    at(G,i,j) = at(V,i,j) + (*dt) * (*nu*diffusion(V,i,j,dx,dy,*size_x) - convection_v(U,V,gamma,i,j,dx,dy,*size_x) + gy);
     
     if(isHeatTransfer==1){
        
