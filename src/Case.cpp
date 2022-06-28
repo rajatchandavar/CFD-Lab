@@ -248,14 +248,18 @@ void Case::simulate() {
         // dt = _field.calculate_dt(_grid);
         t = t + dt;
         ++timestep;
-       
+/*       
         for (int i = 0; i < _boundaries.size(); i++) {
             _boundaries[i]->apply(_field);
-        }
+        } */
+            cuda_solver.pre_process(_field, _grid, _discretization);
+
+                cuda_solver.apply_boundary();
+
 
         if (_field.isHeatTransfer()) { 
             // _field.calculate_temperatures(_grid);
-            cuda_solver.pre_process(_field, _grid, _discretization);
+//            cuda_solver.pre_process(_field, _grid, _discretization);
             cuda_solver.calc_T();
             cuda_solver.post_process(_field);
         }
@@ -267,10 +271,15 @@ void Case::simulate() {
         iter = 0;
 
         do{
-
+/*
             for (int i = 0; i < _boundaries.size(); i++) {
                 _boundaries[i]->apply(_field);
-            }
+            }*/
+              cuda_solver.pre_process(_field, _grid, _discretization);
+
+  cuda_solver.apply_boundary();
+            cuda_solver.post_process(_field);
+
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             iter++;
         }while(res > _tolerance && iter < _max_iter);

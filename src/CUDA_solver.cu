@@ -488,6 +488,10 @@ void CUDA_solver::calc_rs(){
 
 void CUDA_solver::post_process(Fields &field){
     cudaMemcpy((void *)field.t_matrix().data(), T, grid_size * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy((void *)field.u_matrix().data(), U, grid_size * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy((void *)field.v_matrix().data(), V, grid_size * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy((void *)field.p_matrix().data(), P, grid_size * sizeof(double), cudaMemcpyDeviceToHost);
+
 }
 
 CUDA_solver::~CUDA_solver(){
