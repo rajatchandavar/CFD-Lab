@@ -10,7 +10,7 @@
 #include "Fields.hpp"
 #include "Grid.hpp"
 #include "PressureSolver.hpp"
-
+#include "CUDA_solver.cuh"
 /**
  * @brief Class to hold and orchestrate the simulation flow.
  *
@@ -64,6 +64,8 @@ class Case {
 
     /// Maximum number of iterations for the solver
     int _max_iter;
+
+    CUDA_solver cuda_solver;
 
     /**
      * @brief Creating file names from given input data file

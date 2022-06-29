@@ -6,6 +6,7 @@ project(CFDLAB VERSION 1.0)
 
 # Define all configuration options
 option(gpp9 "compile with gpp9 filesystem" ON)
+add_compile_options(-g)
 
 # Definition of the C++ Standard 
 set(CMAKE_CXX_STANDARD 17)

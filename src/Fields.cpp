@@ -228,8 +228,23 @@ Matrix<double> &Fields::u_matrix() { return _U; }
 
 Matrix<double> &Fields::v_matrix() { return _V; }
 
+Matrix<double> &Fields::f_matrix() { return _F; }
+
+Matrix<double> &Fields::g_matrix() { return _G; }
+
+Matrix<double> &Fields::rs_matrix() { return _RS; }
+
 bool Fields::isHeatTransfer() { return _isHeatTransfer;}
 
 double Fields::dt() const { return _dt; }
 
 double Fields::get_alpha() { return _alpha;}
+
+double Fields::get_nu() { return _nu;}
+
+double Fields::get_beta() { return _beta;}
+
+double Fields::get_gx() { return _gx;}
+
+double Fields::get_gy() { return _gy;}
+

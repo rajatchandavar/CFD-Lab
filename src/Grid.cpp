@@ -388,6 +388,16 @@ const std::vector<Cell *> &Grid::inflow_cells() const { return _inflow_cells; }
 
 const std::vector<Cell *> &Grid::outflow_cells() const { return _outflow_cells; }
 
-std::vector<std::vector<int>> Grid::get_geometry_data(){
-    return geometry_data;
+Matrix<int> &Grid::get_geometry_data(){
+    // return geometry_data;
+
+    gpu_geom_data = Matrix<int>(imaxb(), jmaxb());
+
+    for (int i = 0; i < imaxb(); ++i){
+        for (int j = 0; j < jmaxb(); ++j){
+            gpu_geom_data(i,j) = geometry_data.at(i).at(j);
+        }
+    }
+
+    return gpu_geom_data;
 }

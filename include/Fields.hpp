@@ -107,11 +107,22 @@ class Fields {
 
     Matrix<double> &v_matrix();
 
+    Matrix<double> &f_matrix();
+
+    Matrix<double> &g_matrix();
+
+    Matrix<double> &rs_matrix();
+
 
     /// function to check if heat transfer occurs
     bool isHeatTransfer();
 
     double get_alpha();
+    double get_nu();
+    double get_beta();
+
+    double get_gx();
+    double get_gy();
 
   private:
     /// x-velocity matrix
@@ -145,4 +156,5 @@ class Fields {
     double _beta;
     /// Check for heat transfer
     bool _isHeatTransfer;
+
 };

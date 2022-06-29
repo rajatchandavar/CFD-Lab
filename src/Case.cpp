@@ -12,7 +12,6 @@
 #include <map>
 #include <vector>
 
-#include "CUDA_solver.cuh"
 #ifdef GCC_VERSION_9_OR_HIGHER
 namespace filesystem = std::filesystem;
 #else
@@ -162,6 +161,8 @@ Case::Case(std::string file_name, int argn, char **args) {
     if (not _grid.outflow_cells().empty()) {
         _boundaries.push_back(std::make_unique<OutFlowBoundary>(_grid.outflow_cells(), GEOMETRY_PGM::POUT));
     }
+
+    cuda_solver.initialize(_field, _grid, UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c);
 }
 
 void Case::set_file_names(std::string file_name) {
@@ -241,45 +242,47 @@ void Case::simulate() {
     double progress = 0.0;
     int barWidth = 70;
 
-    CUDA_solver cuda_solver(_field, _grid);
+
     output_vtk(timestep); // write the zeroth timestep
 
     while(t < _t_end && progress < 1){
-        // dt = _field.calculate_dt(_grid);
+        dt = _field.calculate_dt(_grid);
         t = t + dt;
         ++timestep;
-/*       
-        for (int i = 0; i < _boundaries.size(); i++) {
-            _boundaries[i]->apply(_field);
-        } */
-            cuda_solver.pre_process(_field, _grid, _discretization);
+       
+        // for (int i = 0; i < _boundaries.size(); i++) {
+        //     _boundaries[i]->apply(_field);
+        // }
 
-                cuda_solver.apply_boundary();
-
+        cuda_solver.pre_process(_field, _grid, _discretization, dt);
+        cuda_solver.apply_boundary();
 
         if (_field.isHeatTransfer()) { 
             // _field.calculate_temperatures(_grid);
-//            cuda_solver.pre_process(_field, _grid, _discretization);
+            // cuda_solver.pre_process(_field, _grid, _discretization);
             cuda_solver.calc_T();
-            cuda_solver.post_process(_field);
+            // cuda_solver.post_process(_field);
         }
-
-        _field.calculate_fluxes(_grid);
         
-        _field.calculate_rs(_grid);
+
+        // _field.calculate_fluxes(_grid);
+
+        // cuda_solver.pre_process(_field, _grid, _discretization);
+        cuda_solver.calc_fluxes();
+        // cuda_solver.post_process(_field);
+
+        cuda_solver.calc_rs();
+        cuda_solver.post_process(_field);
+        
+        // _field.calculate_rs(_grid);
 
         iter = 0;
 
         do{
-/*
+
             for (int i = 0; i < _boundaries.size(); i++) {
                 _boundaries[i]->apply(_field);
-            }*/
-              cuda_solver.pre_process(_field, _grid, _discretization);
-
-  cuda_solver.apply_boundary();
-            cuda_solver.post_process(_field);
-
+            }
             res = _pressure_solver->solve(_field, _grid, _boundaries);
             iter++;
         }while(res > _tolerance && iter < _max_iter);
