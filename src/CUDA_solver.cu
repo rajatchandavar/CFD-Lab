@@ -68,8 +68,8 @@ dim3 CUDA_solver::get_num_blocks_2d(int size_x, int size_y){
 //Boundaries
 
 __global__ void FixedWallBoundary(double *U, double *V, double *P, double *T, int *geometry_data,
-int *fluid_id, int *moving_wall_id, int *fixed_wall_id, int *inflow_id, int *outflow_id, int adiabatic_id, int hot_id,
-int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int isHeatTransfer, int *size_x, int
+int *fluid_id, int *moving_wall_id, int *fixed_wall_id, int *inflow_id, int *outflow_id, int *adiabatic_id, int *hot_id,
+int *cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int *isHeatTransfer, int *size_x, int
 *size_y) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -84,12 +84,12 @@ int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int 
             at(V, i, j - 1) = -at(V, i + 1, j - 1);
             at(P, i, j) = ((P, i, j + 1) + (P, i + 1, j))/2;
 
-            if(isHeatTransfer==1) {
-                if(at(geometry_data,i,j) == adiabatic_id)
+            if(*isHeatTransfer==1) {
+                if(at(geometry_data,i,j) == *adiabatic_id)
                     at(T, i, j) = (at(T, i + 1, j) + at(T, i, j + 1))/2;
-                else if (at(geometry_data,i,j) == hot_id)
+                else if (at(geometry_data,i,j) == *hot_id)
                     at(T,i, j) = 2*(*wall_temp_h) - (at(T,i, j + 1) + at(T,i + 1, j) )/2;
-                else if (at(geometry_data,i,j) == cold_id)
+                else if (at(geometry_data,i,j) == *cold_id)
                     at(T,i, j) = 2*(*wall_temp_c) - (at(T,i, j + 1) + at(T,i + 1, j) )/2;
                 }
 
@@ -106,12 +106,12 @@ int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int 
                 at(V, i, j) = -at(V, i + 1, j);
                 at(P,i, j) = (at(P,i + 1, j) + at(P,i, j - 1))/2;
 
-                if(isHeatTransfer==1) {
-                    if(at(geometry_data,i,j) == adiabatic_id)
+                if(*isHeatTransfer==1) {
+                    if(at(geometry_data,i,j) == *adiabatic_id)
                     at(T,i, j) = (at(T, i + 1, j) + at(T, i, j - 1))/2;
-                    else if (at(geometry_data,i,j) == hot_id)
+                    else if (at(geometry_data,i,j) == *hot_id)
                         at(T, i, j) = 2*(*wall_temp_h) - (at(T,i, j - 1) + at(T,i + 1, j) )/2;
-                    else if (at(geometry_data,i,j) == cold_id)
+                    else if (at(geometry_data,i,j) == *cold_id)
                         at(T,i, j) = 2*(*wall_temp_c) - (at(T,i, j - 1) + at(T,i + 1, j) )/2;
                 }
 
@@ -128,12 +128,12 @@ int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int 
                 at(V,i, j - 1) = -at(V,i - 1, j - 1);
                 at(P,i,j) = (at(P,i - 1, j) + at(P,i, j + 1))/2;
 
-                if(isHeatTransfer==1){
-                    if(at(geometry_data,i,j) == adiabatic_id)
+                if(*isHeatTransfer==1){
+                    if(at(geometry_data,i,j) == *adiabatic_id)
                         at(T,i, j) = (at(T,i - 1, j) + at(T,i, j + 1))/2;
-                    else if (at(geometry_data,i,j) == hot_id)
+                    else if (at(geometry_data,i,j) == *hot_id)
                         at(T,i, j) = 2*(*wall_temp_h) - (at(T,i, j + 1) + at(T,i - 1, j) )/2;
-                    else if (at(geometry_data,i,j) == cold_id)
+                    else if (at(geometry_data,i,j) == *cold_id)
                         at(T,i, j) = 2*(*wall_temp_c) - (at(T,i, j + 1) + at(T,i - 1, j) )/2;
                 }
 
@@ -149,12 +149,12 @@ int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int 
             at(V,i, j) = -at(V,i - 1, j);
             at(P,i, j) = (at(P,i - 1, j) + at(P,i, j - 1))/2;
            
-            if(isHeatTransfer==1){
-                if(at(geometry_data,i,j) == adiabatic_id)
+            if(*isHeatTransfer==1){
+                if(at(geometry_data,i,j) == *adiabatic_id)
                    at(T,i, j) = (at(T,i - 1, j) + at(T,i, j - 1))/2;
-                else if (at(geometry_data,i,j) == hot_id)
+                else if (at(geometry_data,i,j) == *hot_id)
                     at(T,i, j) = 2*(*wall_temp_h) - (at(T,i, j - 1) + at(T,i - 1, j) )/2;
-                else if (at(geometry_data,i,j) == cold_id)
+                else if (at(geometry_data,i,j) == *cold_id)
                     at(T,i, j) = 2*(*wall_temp_c) - (at(T,i, j - 1) + at(T,i - 1, j) )/2;
             }
             
@@ -168,12 +168,12 @@ int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int 
             at(V,i, j) = 0.0;
             at(P,i, j) = at(P,i, j + 1);
 
-            if(isHeatTransfer==1){
-                if(at(geometry_data,i,j) == adiabatic_id)
+            if(*isHeatTransfer==1){
+                if(at(geometry_data,i,j) == *adiabatic_id)
                     at(T,i, j) = at(T,i, j + 1);
-                else if (at(geometry_data,i,j) == hot_id)
+                else if (at(geometry_data,i,j) == *hot_id)
                     at(T,i, j) = 2*(*wall_temp_h) - at(T,i, j + 1);
-                else if (at(geometry_data,i,j) == cold_id)
+                else if (at(geometry_data,i,j) == *cold_id)
                     at(T,i, j) = 2*(*wall_temp_c) - at(T,i, j + 1);
             }
         }
@@ -187,12 +187,12 @@ int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int 
             at(V,i, j) = 0.0;
             at(P,i, j) = at(P,i, j - 1);
 
-            if(isHeatTransfer==1){
-                if(at(geometry_data,i,j) == adiabatic_id)
+            if(*isHeatTransfer==1){
+                if(at(geometry_data,i,j) == *adiabatic_id)
                     at(T,i, j) = at(T,i, j - 1);
-                else if (at(geometry_data,i,j) == hot_id)
+                else if (at(geometry_data,i,j) == *hot_id)
                     at(T,i, j) = 2 * (*wall_temp_h) - at(T,i, j - 1);
-                else if (at(geometry_data,i,j) == cold_id)
+                else if (at(geometry_data,i,j) == *cold_id)
                     at(T,i, j) = 2 * (*wall_temp_c) - at(T,i, j - 1);
             }
         }
@@ -205,12 +205,12 @@ int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int 
             at(V,i, j) = -at(V,i + 1, j);
             at(P,i, j) = at(P,i + 1, j);
 
-            if(isHeatTransfer==1){
-                if(at(geometry_data,i,j) == adiabatic_id)
+            if(*isHeatTransfer==1){
+                if(at(geometry_data,i,j) == *adiabatic_id)
                     at(T,i, j) = at(T,i + 1, j);
-                else if (at(geometry_data,i,j) == hot_id) 
+                else if (at(geometry_data,i,j) == *hot_id) 
                     at(T,i, j) = 2*(*wall_temp_h) - at(T,i + 1, j);        
-                else if (at(geometry_data,i,j) == cold_id)
+                else if (at(geometry_data,i,j) == *cold_id)
                     at(T,i, j) = 2*(*wall_temp_c) - at(T,i + 1, j);
             }
         }
@@ -226,12 +226,12 @@ int cold_id, double *wall_temp_a, double *wall_temp_h, double *wall_temp_c, int 
             at(V,i, j) = -at(V,i - 1, j);
             at(P,i, j) = at(P,i - 1, j);
 
-            if(isHeatTransfer==1){
-                if(at(geometry_data,i,j) == adiabatic_id)
+            if(*isHeatTransfer==1){
+                if(at(geometry_data,i,j) == *adiabatic_id)
                     at(T,i, j) = at(T,i - 1, j);
-                else if (at(geometry_data,i,j) == hot_id)
+                else if (at(geometry_data,i,j) == *hot_id)
                     at(T,i, j) = 2*(*wall_temp_h) - at(T,i - 1, j);
-                else if (at(geometry_data,i,j) == cold_id)
+                else if (at(geometry_data,i,j) == *cold_id)
                     at(T,i, j) = 2*(*wall_temp_c) - at(T,i - 1, j);
             }
         }
@@ -291,6 +291,7 @@ CUDA_solver::CUDA_solver(Fields &field, Grid &grid){
     cudaMalloc((void **)&P, grid_size * sizeof(double));
     cudaMalloc((void **)&F, grid_size * sizeof(double));
     cudaMalloc((void **)&G, grid_size * sizeof(double));
+    cudaMalloc((void **)&RS, grid_size * sizeof(double));
 
 
     cudaMalloc((void **)&dx, sizeof(double));
@@ -360,20 +361,20 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     var = GEOMETRY_PGM::adiabatic_id;
     cudaMemcpy(adiabatic_id, &var, sizeof(int),cudaMemcpyHostToDevice);
 
-    var = wall_temp_a;
+    var = *wall_temp_a;
     cudaMemcpy(wall_temp_a, &var, sizeof(double),cudaMemcpyHostToDevice);
-    var = wall_temp_h;
+    var = *wall_temp_h;
     cudaMemcpy(wall_temp_h, &var, sizeof(double),cudaMemcpyHostToDevice);
-    var = wall_temp_c;
+    var = *wall_temp_c;
     cudaMemcpy(wall_temp_c, &var, sizeof(double),cudaMemcpyHostToDevice);
     var = field.isHeatTransfer();
     cudaMemcpy(isHeatTransfer, &var, sizeof(int),cudaMemcpyHostToDevice);
 
     var = LidDrivenCavity::wall_velocity;
     cudaMemcpy(wall_velocity, &var, sizeof(double),cudaMemcpyHostToDevice);
-    var = UIN;
+    var = *UIN;
     cudaMemcpy(UIN, &var, sizeof(double),cudaMemcpyHostToDevice);
-    var = VIN;
+    var = *VIN;
     cudaMemcpy(VIN, &var, sizeof(double),cudaMemcpyHostToDevice);
     var = GEOMETRY_PGM::POUT;
     cudaMemcpy(POUT, &var, sizeof(double),cudaMemcpyHostToDevice);
@@ -402,17 +403,15 @@ void CUDA_solver::apply_boundary() {
 
 }
 
-__global__ void calc_fluxes(double *F, double *G, double *U, double *V, double *T, double *gx, double *gy, double *dx,
-double *dy, int *size_x, int *size_y, double *gamma, double *beta, double *nu, double *dt, int isHeatTransfer, int
-*geometry_data){
+__global__ void calc_fluxes(double *F, double *G, double *U, double *V, double *T, double *gx, double *gy, double *dx, double *dy, int *size_x, int *size_y, double *gamma, double *beta, double *nu, double *dt, int isHeatTransfer, int *geometry_data){
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
     if (i < *size_x && j < *size_y) {
 
 
-    at(F,i,j) = at(U,i,j) + (*dt) * (*nu*diffusion(U,i,j,dx,dy,*size_x) - convection_u(U,V,gamma,i,j,dx,dy,*size_x) + (*gx));
-    at(G,i,j) = at(V,i,j) + (*dt) * (*nu*diffusion(V,i,j,dx,dy,*size_x) - convection_v(U,V,gamma,i,j,dx,dy,*size_x) + gy);
+    at(F,i,j) = at(U,i,j) + (*dt) * ((*nu)*diffusion(U,i,j,*dx,*dy,size_x) - convection_u(U,V,*gamma,i,j,*dx,*dy,size_x) + (*gx));
+    at(G,i,j) = at(V,i,j) + (*dt) * ((*nu)*diffusion(V,i,j,*dx,*dy,size_x) - convection_v(U,V,*gamma,i,j,*dx,*dy,size_x) + (*gy));
     
     if(isHeatTransfer==1){
        
@@ -482,8 +481,14 @@ double *dy, int *size_x, int *size_y, double *gamma, double *beta, double *nu, d
 }
 }
 
-void CUDA_solver::calc_rs(){
-    
+__global__ void calc_rs(double *F, double *G, double *RS, int *dx, int *dy, int *size_x, int *size_y, double *dt) {
+
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    if (i < *size_x && j < *size_y) {
+            at(RS,i, j) = 1 / (*dt) * ((at(F,i, j) - at(F,i - 1, j)) / (*dx) + 
+                               (at(G,i, j) - at(G,i, j - 1)) / (*dy)); 
+}
 }
 
 void CUDA_solver::post_process(Fields &field){
@@ -526,4 +531,6 @@ CUDA_solver::~CUDA_solver(){
     cudaFree(VIN);
     cudaFree(POUT);
     cudaFree(wall_velocity);
+    cudaFree(RS);
+
 }

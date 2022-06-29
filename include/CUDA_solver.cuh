@@ -21,6 +21,7 @@ class CUDA_solver{
     double *P;
     double *F;
     double *G;
+    double *RS;
 
     int *geometry_data;
 
