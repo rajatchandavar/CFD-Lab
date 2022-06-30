@@ -5,7 +5,10 @@
 #endif
 #define at(var, i, j) var[(j) * (*gpu_size_x) + (i)]
 
-// #define at_geom(var, i, j) var[(i) * (*gpu_size_y) + (j)]
+#define check_bound_north(j) ((j + 1) < *gpu_size_y)
+#define check_bound_south(j) ((j - 1) >= 0)
+#define check_bound_east(i) ((i + 1) < *gpu_size_x)
+#define check_bound_west(i) ((i - 1) >=0)
 
 __device__ double interpolate(double *A, int i, int j, int i_offset, int j_offset, int *gpu_size_x) {
     double result = (at(A, i, j) + at(A, i + i_offset, j + j_offset)) / 2;
@@ -85,7 +88,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
         // obstacles B_NE (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the North and East directions 
 
-        if(at(gpu_geometry_data,i,j+1)==0 && at(gpu_geometry_data,i+1,j)==0) {
+        if(check_bound_north(j) && check_bound_east(i) && at(gpu_geometry_data,i,j+1)==0 && at(gpu_geometry_data,i+1,j)==0) {
             at(gpu_U, i, j) = 0.0;
             at(gpu_U, i - 1, j) = -at(gpu_U, i - 1, j + 1);
             at(gpu_V, i, j) = 0.0;
@@ -105,7 +108,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
         // obstacles B_SE (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the South and East directions 
 
-        else if(at(gpu_geometry_data,i,j-1)==0 && at(gpu_geometry_data,i+1,j)==0) {
+        else if(check_bound_south(j) && check_bound_east(i) && at(gpu_geometry_data,i,j-1)==0 && at(gpu_geometry_data,i+1,j)==0) {
 
             at(gpu_U, i, j) = 0.0;
             at(gpu_U, i - 1, j) = -at(gpu_U, i - 1, j - 1);
@@ -127,7 +130,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
         // obstacle B_NW (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the North and West directions 
             
-        else if(at(gpu_geometry_data,i,j+1)==0 && at(gpu_geometry_data,i-1,j)==0) {
+        else if(check_bound_north(j) && check_bound_west(i) && at(gpu_geometry_data,i,j+1)==0 && at(gpu_geometry_data,i-1,j)==0) {
 
             at(gpu_U,i - 1, j) = 0.0;
             at(gpu_U,i, j) = -at(gpu_U,i, j + 1);
@@ -149,7 +152,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
         // obstacle B_SW (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the South and West directions 
 
-        else if(at(gpu_geometry_data,i,j-1)==0 && at(gpu_geometry_data,i-1,j)==0){
+        else if(check_bound_south(j) && check_bound_west(i) && at(gpu_geometry_data,i,j-1)==0 && at(gpu_geometry_data,i-1,j)==0){
             at(gpu_U,i - 1, j) = 0.0;
             at(gpu_U,i, j) = at(gpu_U,i, j - 1);
             at(gpu_V,i, j - 1) = 0.0;
@@ -170,7 +173,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
         // Bottom Wall B_N (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the North direction
 
-        else if(at(gpu_geometry_data,i,j+1)==0){
+        else if(check_bound_north(j) && at(gpu_geometry_data,i,j+1)==0){
             at(gpu_U,i, j) = -at(gpu_U,i, j + 1);
             at(gpu_V,i, j) = 0.0;
             at(gpu_P,i, j) = at(gpu_P,i, j + 1);
@@ -188,7 +191,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
         // Top Wall B_S (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the South direction
 
-        else if(at(gpu_geometry_data,i,j-1)==0){
+        else if(check_bound_south(j) && at(gpu_geometry_data,i,j-1)==0){
 
             at(gpu_U,i, j) = -at(gpu_U,i, j - 1);
             at(gpu_V,i, j) = 0.0;
@@ -207,7 +210,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
         // Left Wall B_E (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the East direction
 
-        else if(at(gpu_geometry_data,i+1,j)==0){
+        else if(check_bound_east(i) && at(gpu_geometry_data,i+1,j)==0){
             at(gpu_U,i, j) = 0.0;
             at(gpu_V,i, j) = -at(gpu_V,i + 1, j);
             at(gpu_P,i, j) = at(gpu_P,i + 1, j);
@@ -227,7 +230,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
         * Right Wall B_W (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on the West direction *
         ***********************************************************************************************/
 
-        else if(at(gpu_geometry_data,i-1,j)==0){
+        else if(check_bound_west(i) && at(gpu_geometry_data,i-1,j)==0){
             //Since u grid is staggered, the u velocity of cells to left of ghost layer should be set to 0.
             at(gpu_U,i - 1, j) = 0.0; 
             at(gpu_V,i, j) = -at(gpu_V,i - 1, j);
@@ -248,7 +251,7 @@ int *gpu_cold_id, double *gpu_wall_temp_a, double *gpu_wall_temp_h, double *gpu_
 __global__ void MovingWallBoundary(double *gpu_U, double *gpu_V, double *gpu_P, double *gpu_wall_velocity, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 8) {       
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 8 && check_bound_south(j)) {       
         at(gpu_U,i, j) = 2*(*gpu_wall_velocity)- at(gpu_U,i, j-1);
         //Since v grid is staggered, the v velocity of cells to below of ghost layer should be set to 0.
         at(gpu_V,i,j - 1) = 0.0;
@@ -259,7 +262,7 @@ __global__ void MovingWallBoundary(double *gpu_U, double *gpu_V, double *gpu_P, 
 __global__ void InFlowBoundary(double *gpu_U, double *gpu_V, double *gpu_P, double *gpu_UIN, double *gpu_VIN, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 1) {
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 1 && check_bound_east(i)) {
         at(gpu_U,i,j) = (*gpu_UIN);
         at(gpu_V,i,j) = 2*(*gpu_VIN) - at(gpu_V,i + 1, j);
         at(gpu_P,i,j) = at(gpu_P,i + 1, j);
@@ -269,7 +272,7 @@ __global__ void InFlowBoundary(double *gpu_U, double *gpu_V, double *gpu_P, doub
 __global__ void OutFlowBoundary(double *gpu_U, double *gpu_V, double *gpu_P, double *gpu_POUT, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 2) {
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 2 && check_bound_west(i)) {
             at(gpu_U,i,j) = at(gpu_U,i - 1,j);
             at(gpu_V,i,j) = at(gpu_V,i - 1,j);
             at(gpu_P,i,j) = 2*(*gpu_POUT) - at(gpu_P,i - 1, j);
@@ -303,8 +306,7 @@ __global__ void calc_fluxes_kernel(double *gpu_F, double *gpu_G, double *gpu_U, 
     }
 }
 
-__global__ void fluxes_bc_kernel(double *gpu_F, double *gpu_G, double *gpu_U, double *gpu_V, double *gpu_T, int *gpu_geometry_data, double *gpu_gx, double *gpu_gy, double *gpu_dx, double *gpu_dy, int *gpu_size_x, int *gpu_size_y, double *gpu_gamma, double *gpu_beta,
-                             double *gpu_nu, double *gpu_dt, bool *gpu_isHeatTransfer) {
+__global__ void fluxes_bc_kernel(double *gpu_F, double *gpu_G, double *gpu_U, double *gpu_V, int *gpu_geometry_data, int *gpu_size_x, int *gpu_size_y) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -313,41 +315,41 @@ __global__ void fluxes_bc_kernel(double *gpu_F, double *gpu_G, double *gpu_U, do
         if (at(gpu_geometry_data, i, j) == 3 || at(gpu_geometry_data, i, j) == 5 || at(gpu_geometry_data, i, j) == 6 || at(gpu_geometry_data, i, j) == 7) {
             // B_NE fixed wall corner cell with fluid cells on the North and East directions
 
-            if (at(gpu_geometry_data, i, j + 1) == 0 && at(gpu_geometry_data, i + 1, j) == 0) {
+            if (check_bound_north(j) && check_bound_east(i) && at(gpu_geometry_data, i, j + 1) == 0 && at(gpu_geometry_data, i + 1, j) == 0) {
                 at(gpu_F, i, j) = at(gpu_U, i, j);
                 at(gpu_G, i, j) = at(gpu_V, i, j);
             }
 
             // B_SE fixed wall corner cell with fluid cells on the South and East directions
 
-            else if (at(gpu_geometry_data, i, j - 1) == 0 && at(gpu_geometry_data, i + 1, j) == 0) {
+            else if (check_bound_south(j) && check_bound_east(i) && at(gpu_geometry_data, i, j - 1) == 0 && at(gpu_geometry_data, i + 1, j) == 0) {
                 at(gpu_F, i, j) = at(gpu_U, i, j);
                 at(gpu_G, i, j - 1) = at(gpu_V, i, j - 1);
             }
 
             // B_NW fixed wall corner cell with fluid cells on the North and West directions
 
-            else if (at(gpu_geometry_data, i, j + 1) == 0 && at(gpu_geometry_data, i - 1, j) == 0) {
+            else if (check_bound_north(j) && check_bound_west(i) && at(gpu_geometry_data, i, j + 1) == 0 && at(gpu_geometry_data, i - 1, j) == 0) {
                 at(gpu_F, i - 1, j) = at(gpu_U, i - 1, j);
                 at(gpu_G, i, j) = at(gpu_V, i, j);
             }
 
             // B_SW fixed wall corner cell with fluid cells on the South and West directions
 
-            else if (at(gpu_geometry_data, i, j - 1) == 0 && at(gpu_geometry_data, i - 1, j) == 0) {
+            else if (check_bound_south(j) && check_bound_west(i) && at(gpu_geometry_data, i, j - 1) == 0 && at(gpu_geometry_data, i - 1, j) == 0) {
                 at(gpu_F, i - 1, j) = at(gpu_U, i - 1, j);
                 at(gpu_G, i, j - 1) = at(gpu_V, i, j - 1);
             } 
-            else if (at(gpu_geometry_data, i, j + 1) == 0)
+            else if (check_bound_north(j) && at(gpu_geometry_data, i, j + 1) == 0)
                 at(gpu_G, i, j) = at(gpu_V, i, j);
 
-            else if (at(gpu_geometry_data, i, j - 1) == 0)
+            else if (check_bound_south(j) && at(gpu_geometry_data, i, j - 1) == 0)
                 at(gpu_G,i,j - 1) = at(gpu_V,i,j - 1);
 
-            else if (at(gpu_geometry_data, i - 1, j) == 0)
+            else if (check_bound_west(i) && at(gpu_geometry_data, i - 1, j) == 0)
                 at(gpu_F, i - 1, j) = at(gpu_U, i - 1, j);
 
-            else if (at(gpu_geometry_data, i + 1, j) == 0)
+            else if (check_bound_east(i) && at(gpu_geometry_data, i + 1, j) == 0)
                 at(gpu_F, i, j) = at(gpu_U, i, j);
 
         }
@@ -535,7 +537,7 @@ void CUDA_solver::calc_T() {
 void CUDA_solver::calc_fluxes() {
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
     calc_fluxes_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F,gpu_G,gpu_U,gpu_V,gpu_T,gpu_geometry_data,gpu_gx,gpu_gy,gpu_dx,gpu_dy,gpu_size_x, gpu_size_y, gpu_gamma, gpu_beta, gpu_nu, gpu_dt, gpu_isHeatTransfer);
-    fluxes_bc_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F,gpu_G,gpu_U,gpu_V,gpu_T,gpu_geometry_data,gpu_gx,gpu_gy,gpu_dx,gpu_dy,gpu_size_x, gpu_size_y, gpu_gamma, gpu_beta, gpu_nu, gpu_dt, gpu_isHeatTransfer);
+    fluxes_bc_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F,gpu_G,gpu_U,gpu_V,gpu_geometry_data,gpu_size_x, gpu_size_y);
 }
 
 void CUDA_solver::calc_rs() {
