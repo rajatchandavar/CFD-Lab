@@ -4,7 +4,7 @@
 
 FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells) : _cells(cells) {}
 
-FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature)
+FixedWallBoundary::FixedWallBoundary(std::vector<Cell *> cells, std::map<int, dtype> wall_temperature)
     : _cells(cells), _wall_temperature(wall_temperature) {}
 
 /*****************************************************************************************
@@ -30,7 +30,7 @@ void FixedWallBoundary::apply(Fields &field) {
 
             if(field.isHeatTransfer()){
                 int id = _wall_temperature.begin()->first;
-                double wall_temp = _wall_temperature.begin()->second;
+                dtype wall_temp = _wall_temperature.begin()->second;
                 if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
                    field.t(i, j) = (field.t(i + 1, j) + field.t(i, j + 1))/2;
                 else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
@@ -53,7 +53,7 @@ void FixedWallBoundary::apply(Fields &field) {
 
             if(field.isHeatTransfer()){
                 int id = _wall_temperature.begin()->first;
-                double wall_temp = _wall_temperature.begin()->second;
+                dtype wall_temp = _wall_temperature.begin()->second;
                 if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
                    field.t(i, j) = (field.t(i + 1, j) + field.t(i, j - 1))/2;
                 else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
@@ -76,7 +76,7 @@ void FixedWallBoundary::apply(Fields &field) {
 
             if(field.isHeatTransfer()){
                 int id = _wall_temperature.begin()->first;
-                double wall_temp = _wall_temperature.begin()->second;
+                dtype wall_temp = _wall_temperature.begin()->second;
                 if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
                    field.t(i, j) = (field.t(i - 1, j) + field.t(i, j + 1))/2;
                 else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
@@ -99,7 +99,7 @@ void FixedWallBoundary::apply(Fields &field) {
            
             if(field.isHeatTransfer()){
                 int id = _wall_temperature.begin()->first;
-                double wall_temp = _wall_temperature.begin()->second;
+                dtype wall_temp = _wall_temperature.begin()->second;
                 if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
                    field.t(i, j) = (field.t(i - 1, j) + field.t(i, j - 1))/2;
                 else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
@@ -120,7 +120,7 @@ void FixedWallBoundary::apply(Fields &field) {
 
             if(field.isHeatTransfer()){
                 int id = _wall_temperature.begin()->first;
-                double wall_temp = _wall_temperature.begin()->second;
+                dtype wall_temp = _wall_temperature.begin()->second;
                 if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
                     field.t(i, j) = field.t(i, j + 1);
                 else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
@@ -142,7 +142,7 @@ void FixedWallBoundary::apply(Fields &field) {
 
             if(field.isHeatTransfer()){
                 int id = _wall_temperature.begin()->first;
-                double wall_temp = _wall_temperature.begin()->second;
+                dtype wall_temp = _wall_temperature.begin()->second;
                 if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
                     field.t(i, j) = field.t(i, j - 1);
                 else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
@@ -164,7 +164,7 @@ void FixedWallBoundary::apply(Fields &field) {
 
             if(field.isHeatTransfer()){
                 int id = _wall_temperature.begin()->first;
-                double wall_temp = _wall_temperature.begin()->second;
+                dtype wall_temp = _wall_temperature.begin()->second;
                 if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
                     field.t(i, j) = field.t(i + 1, j);
                 else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id) {
@@ -189,7 +189,7 @@ void FixedWallBoundary::apply(Fields &field) {
 
             if(field.isHeatTransfer()){
                 int id = _wall_temperature.begin()->first;
-                double wall_temp = _wall_temperature.begin()->second;
+                dtype wall_temp = _wall_temperature.begin()->second;
                 if(currentCell->wall_id() == GEOMETRY_PGM::adiabatic_id)
                     field.t(i, j) = field.t(i - 1, j);
                 else if (currentCell->wall_id() == GEOMETRY_PGM::hot_id && id == GEOMETRY_PGM::hot_id)
@@ -204,12 +204,12 @@ void FixedWallBoundary::apply(Fields &field) {
 
 }
 
-MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, double wall_velocity) : _cells(cells) {
+MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, dtype wall_velocity) : _cells(cells) {
     _wall_velocity.insert(std::pair(LidDrivenCavity::moving_wall_id, wall_velocity));
 }
 
-MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_velocity,
-                                       std::map<int, double> wall_temperature)
+MovingWallBoundary::MovingWallBoundary(std::vector<Cell *> cells, std::map<int, dtype> wall_velocity,
+                                       std::map<int, dtype> wall_temperature)
     : _cells(cells), _wall_velocity(wall_velocity), _wall_temperature(wall_temperature) {}
 
 /***********************************************************************************************
@@ -231,13 +231,13 @@ void MovingWallBoundary::apply(Fields &field) {
 
 // Inflow Boundary
 
-InFlowBoundary::InFlowBoundary(std::vector<Cell *> cells, double UIN, double VIN) : _cells(cells) {
+InFlowBoundary::InFlowBoundary(std::vector<Cell *> cells, dtype UIN, dtype VIN) : _cells(cells) {
     _UIN.insert(std::pair(GEOMETRY_PGM::inflow_id, UIN));
     _VIN.insert(std::pair(GEOMETRY_PGM::inflow_id, VIN));
 }
 
-InFlowBoundary::InFlowBoundary(std::vector<Cell *> cells, std::map<int, double> UIN, std::map<int, double> VIN,
-                                       std::map<int, double> wall_temperature)
+InFlowBoundary::InFlowBoundary(std::vector<Cell *> cells, std::map<int, dtype> UIN, std::map<int, dtype> VIN,
+                                       std::map<int, dtype> wall_temperature)
     : _cells(cells), _UIN(UIN), _VIN(VIN), _wall_temperature(wall_temperature) {}
 
 
@@ -256,12 +256,12 @@ void InFlowBoundary::apply(Fields &field) {
     }
 }
 
-OutFlowBoundary::OutFlowBoundary(std::vector<Cell *> cells, double POUT) : _cells(cells) {
+OutFlowBoundary::OutFlowBoundary(std::vector<Cell *> cells, dtype POUT) : _cells(cells) {
     _POUT.insert(std::pair(GEOMETRY_PGM::outflow_id, POUT));
 }
 
-OutFlowBoundary::OutFlowBoundary(std::vector<Cell *> cells, std::map<int, double> POUT,
-                                       std::map<int, double> wall_temperature)
+OutFlowBoundary::OutFlowBoundary(std::vector<Cell *> cells, std::map<int, dtype> POUT,
+                                       std::map<int, dtype> wall_temperature)
     : _cells(cells), _POUT(POUT), _wall_temperature(wall_temperature) {}
 
 

@@ -3,18 +3,18 @@
 #include <algorithm>
 #include <iostream>
 
-Fields::Fields(double nu, double dt, double tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double alpha, double beta, bool isHeatTransfer, double gx, double gy)
+Fields::Fields(dtype nu, dtype dt, dtype tau, int imax, int jmax, dtype UI, dtype VI, dtype PI, dtype TI, const Grid &grid, dtype alpha, dtype beta, bool isHeatTransfer, dtype gx, dtype gy)
     : _nu(nu), _dt(dt), _tau(tau),_alpha(alpha), _beta(beta), _isHeatTransfer(isHeatTransfer), _gx(gx), _gy(gy) {
 
-    _U = Matrix<double>(imax + 2, jmax + 2, 0.0);
-    _V = Matrix<double>(imax + 2, jmax + 2, 0.0);
-    _P = Matrix<double>(imax + 2, jmax + 2, 0.0);
-    _F = Matrix<double>(imax + 2, jmax + 2, 0.0);
-    _G = Matrix<double>(imax + 2, jmax + 2, 0.0);
-    _RS = Matrix<double>(imax + 2, jmax + 2, 0.0);
+    _U = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
+    _V = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
+    _P = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
+    _F = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
+    _G = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
+    _RS = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
 
     if (_isHeatTransfer){
-        _T = Matrix<double>(imax + 2, jmax + 2, TI);
+        _T = Matrix<dtype>(imax + 2, jmax + 2, TI);
     }
 
     for (auto currentCell : grid.fluid_cells()){
@@ -158,10 +158,10 @@ void Fields::calculate_velocities(Grid &grid) {
  * This function calculate timestep for adaptive time stepping *
  ****************************************************************************************/
 
-double Fields::calculate_dt(Grid &grid) {
+dtype Fields::calculate_dt(Grid &grid) {
     // Stability constraint for explicit time stepping according to equation (22)
-    double t1 = 1 / (2 * _nu * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
-    double u_max = 0, v_max = 0, temp;
+    dtype t1 = 1 / (2 * _nu * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
+    dtype u_max = 0, v_max = 0, temp;
     for (int i = 0; i < grid.imaxb(); ++i){
         for(int j=0;j<grid.jmaxb();++j)
         {
@@ -177,10 +177,10 @@ double Fields::calculate_dt(Grid &grid) {
     }
 
     // Courant Number limitation t2,t3 according to equation (22)
-    double t2 = grid.dx() / u_max;
-    double t3 = grid.dy() / v_max;   
+    dtype t2 = grid.dx() / u_max;
+    dtype t3 = grid.dy() / v_max;   
     // Stability constraint for explicit time stepping according to equation (37)
-    double t4 = 1 / (2 * _alpha * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
+    dtype t4 = 1 / (2 * _alpha * (1/(grid.dx()*grid.dx()) + 1/(grid.dy()*grid.dy())));
     _dt = _tau * std::min({t1, t2, t3, t4});
     return _dt;
 }
@@ -192,9 +192,9 @@ double Fields::calculate_dt(Grid &grid) {
 void Fields::calculate_temperatures(Grid &grid)
 {
 
-    double imaxb = grid.imaxb();
-    double jmaxb = grid.jmaxb();
-    Matrix<double> T_temp(imaxb, jmaxb, 0);
+    dtype imaxb = grid.imaxb();
+    dtype jmaxb = grid.jmaxb();
+    Matrix<dtype> T_temp(imaxb, jmaxb, 0);
     for(auto i = 0; i < imaxb; i++)
     {
         for(auto j = 0; j < jmaxb; j++)
@@ -212,39 +212,39 @@ void Fields::calculate_temperatures(Grid &grid)
     
 }
 
-double &Fields::p(int i, int j) { return _P(i, j); }
-double &Fields::u(int i, int j) { return _U(i, j); }
-double &Fields::v(int i, int j) { return _V(i, j); }
-double &Fields::f(int i, int j) { return _F(i, j); }
-double &Fields::g(int i, int j) { return _G(i, j); }
-double &Fields::rs(int i, int j) { return _RS(i, j); }
-double &Fields::t(int i, int j) { return _T(i,j);}
+dtype &Fields::p(int i, int j) { return _P(i, j); }
+dtype &Fields::u(int i, int j) { return _U(i, j); }
+dtype &Fields::v(int i, int j) { return _V(i, j); }
+dtype &Fields::f(int i, int j) { return _F(i, j); }
+dtype &Fields::g(int i, int j) { return _G(i, j); }
+dtype &Fields::rs(int i, int j) { return _RS(i, j); }
+dtype &Fields::t(int i, int j) { return _T(i,j);}
 
-Matrix<double> &Fields::p_matrix() { return _P; }
+Matrix<dtype> &Fields::p_matrix() { return _P; }
 
-Matrix<double> &Fields::t_matrix() { return _T; }
+Matrix<dtype> &Fields::t_matrix() { return _T; }
 
-Matrix<double> &Fields::u_matrix() { return _U; }
+Matrix<dtype> &Fields::u_matrix() { return _U; }
 
-Matrix<double> &Fields::v_matrix() { return _V; }
+Matrix<dtype> &Fields::v_matrix() { return _V; }
 
-Matrix<double> &Fields::f_matrix() { return _F; }
+Matrix<dtype> &Fields::f_matrix() { return _F; }
 
-Matrix<double> &Fields::g_matrix() { return _G; }
+Matrix<dtype> &Fields::g_matrix() { return _G; }
 
-Matrix<double> &Fields::rs_matrix() { return _RS; }
+Matrix<dtype> &Fields::rs_matrix() { return _RS; }
 
 bool Fields::isHeatTransfer() { return _isHeatTransfer;}
 
-double Fields::dt() const { return _dt; }
+dtype Fields::dt() const { return _dt; }
 
-double Fields::get_alpha() { return _alpha;}
+dtype Fields::get_alpha() { return _alpha;}
 
-double Fields::get_nu() { return _nu;}
+dtype Fields::get_nu() { return _nu;}
 
-double Fields::get_beta() { return _beta;}
+dtype Fields::get_beta() { return _beta;}
 
-double Fields::get_gx() { return _gx;}
+dtype Fields::get_gx() { return _gx;}
 
-double Fields::get_gy() { return _gy;}
+dtype Fields::get_gy() { return _gy;}
 

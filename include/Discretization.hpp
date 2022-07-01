@@ -17,7 +17,7 @@ class Discretization {
      * @param[in] cell size in y direction
      * @param[in] upwinding coefficient
      */
-    Discretization(double dx, double dy, double gamma);
+    Discretization(dtype dx, dtype dy, dtype gamma);
 
     /**
      * @brief Diffusion discretization in 2D using central differences
@@ -27,7 +27,7 @@ class Discretization {
      * @param[in] y index
      *
      */
-    static double diffusion(const Matrix<double> &A, int i, int j);
+    static dtype diffusion(const Matrix<dtype> &A, int i, int j);
 
     /**
      * @brief Convection in x direction using donor-cell scheme
@@ -39,7 +39,7 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double convection_u(const Matrix<double> &U, const Matrix<double> &V, int i, int j);
+    static dtype convection_u(const Matrix<dtype> &U, const Matrix<dtype> &V, int i, int j);
 
     /**
      * @brief Convection in y direction using donor-cell scheme
@@ -51,7 +51,7 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double convection_v(const Matrix<double> &U, const Matrix<double> &V, int i, int j);
+    static dtype convection_v(const Matrix<dtype> &U, const Matrix<dtype> &V, int i, int j);
 
     /**
      * @brief Convection of Temperature in x direction using donor-cell scheme
@@ -63,7 +63,7 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double convection_Tu(const Matrix<double> &T, const Matrix<double> &U, int i, int j);
+    static dtype convection_Tu(const Matrix<dtype> &T, const Matrix<dtype> &U, int i, int j);
 
 
     /**
@@ -76,7 +76,7 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double convection_Tv(const Matrix<double> &T, const Matrix<double> &V, int i, int j);
+    static dtype convection_Tv(const Matrix<dtype> &T, const Matrix<dtype> &V, int i, int j);
 
     /**
      * @brief Laplacian term discretization using central difference
@@ -87,7 +87,7 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double laplacian(const Matrix<double> &P, int i, int j);
+    static dtype laplacian(const Matrix<dtype> &P, int i, int j);
 
     /**
      * @brief Terms of laplacian needed for SOR, i.e. excluding unknown value at
@@ -99,7 +99,7 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double sor_helper(const Matrix<double> &P, int i, int j);
+    static dtype sor_helper(const Matrix<dtype> &P, int i, int j);
 
     /**
      * @brief Compute interpolated value in the middle between two grid points via linear interpolation.
@@ -112,12 +112,12 @@ class Discretization {
      * @param[out] result
      *
      */
-    static double interpolate(const Matrix<double> &A, int i, int j, int i_offset, int j_offset);
+    static dtype interpolate(const Matrix<dtype> &A, int i, int j, int i_offset, int j_offset);
 
-    double get_gamma();
+    dtype get_gamma();
 
   private:
-    static double _dx;
-    static double _dy;
-    static double _gamma;
+    static dtype _dx;
+    static dtype _dy;
+    static dtype _gamma;
 };

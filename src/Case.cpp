@@ -31,37 +31,37 @@ Case::Case(std::string file_name, int argn, char **args) {
     // Read input parameters
     const int MAX_LINE_LENGTH = 1024;
     std::ifstream file(file_name);
-    double nu;      /* viscosity   */
-    double UI;      /* velocity x-direction */
-    double VI;      /* velocity y-direction */
-    double PI;      /* pressure */
-    double GX;      /* gravitation x-direction */
-    double GY;      /* gravitation y-direction */
-    double xlength; /* length of the domain x-dir.*/
-    double ylength; /* length of the domain y-dir.*/
-    double dt;      /* time step */
+    dtype nu;      /* viscosity   */
+    dtype UI;      /* velocity x-direction */
+    dtype VI;      /* velocity y-direction */
+    dtype PI;      /* pressure */
+    dtype GX;      /* gravitation x-direction */
+    dtype GY;      /* gravitation y-direction */
+    dtype xlength; /* length of the domain x-dir.*/
+    dtype ylength; /* length of the domain y-dir.*/
+    dtype dt;      /* time step */
     int imax;       /* number of cells x-direction*/
     int jmax;       /* number of cells y-direction*/
-    double gamma;   /* uppwind differencing factor*/
-    double omg;     /* relaxation factor */
-    double tau;     /* safety factor for time step*/
+    dtype gamma;   /* uppwind differencing factor*/
+    dtype omg;     /* relaxation factor */
+    dtype tau;     /* safety factor for time step*/
     int itermax;    /* max. number of iterations for pressure per time step */
-    double eps;     /* accuracy bound for pressure*/
+    dtype eps;     /* accuracy bound for pressure*/
 
-    double UIN;     /* inlet velocity */
-    double VIN;     /* outlet velocity */
+    dtype UIN;     /* inlet velocity */
+    dtype VIN;     /* outlet velocity */
     int num_of_walls; /* number of walls */
 
-    double TI;      /* initial temperature */
-    double beta;    /* thermal expansion co-efficient */
-    double alpha;   /* thermal diffusivity */
+    dtype TI;      /* initial temperature */
+    dtype beta;    /* thermal expansion co-efficient */
+    dtype alpha;   /* thermal diffusivity */
 
    
-   double wall_temp_a; // a is adiabatic(5)
-   double wall_temp_h; // h is hot wall (6)
-   double wall_temp_c; // c is cold wall (7)
+   dtype wall_temp_a; // a is adiabatic(5)
+   dtype wall_temp_h; // h is hot wall (6)
+   dtype wall_temp_c; // c is cold wall (7)
     
-    std::vector<double> wall_temp;
+    std::vector<dtype> wall_temp;
     if (file.is_open()) {
 
         std::string var;
@@ -107,17 +107,17 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     // bool variable isHeatTransfer checks if heat transfer occurs in the system
     bool isHeatTransfer = false;
-    std::map<int, double> wall_temp_a_map, wall_temp_h_map, wall_temp_c_map;
+    std::map<int, dtype> wall_temp_a_map, wall_temp_h_map, wall_temp_c_map;
     if (!wall_temp.empty()){
         isHeatTransfer = true;
-        wall_temp_a_map.insert(std::pair<int, double>(GEOMETRY_PGM::adiabatic_id, wall_temp_a));
-        wall_temp_h_map.insert(std::pair<int, double>(GEOMETRY_PGM::hot_id, wall_temp_h));
-        wall_temp_c_map.insert(std::pair<int, double>(GEOMETRY_PGM::cold_id, wall_temp_c));
+        wall_temp_a_map.insert(std::pair<int, dtype>(GEOMETRY_PGM::adiabatic_id, wall_temp_a));
+        wall_temp_h_map.insert(std::pair<int, dtype>(GEOMETRY_PGM::hot_id, wall_temp_h));
+        wall_temp_c_map.insert(std::pair<int, dtype>(GEOMETRY_PGM::cold_id, wall_temp_c));
     }
       
-    std::map<int, double> wall_vel;
+    std::map<int, dtype> wall_vel;
     if (_geom_name.compare("NONE") == 0) {
-        wall_vel.insert(std::pair<int, double>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
+        wall_vel.insert(std::pair<int, dtype>(LidDrivenCavity::moving_wall_id, LidDrivenCavity::wall_velocity));
     }
 
 
@@ -126,8 +126,8 @@ Case::Case(std::string file_name, int argn, char **args) {
 
     // Build up the domain
     Domain domain;
-    domain.dx = xlength / static_cast<double>(imax);
-    domain.dy = ylength / static_cast<double>(jmax);
+    domain.dx = xlength / static_cast<dtype>(imax);
+    domain.dy = ylength / static_cast<dtype>(jmax);
     domain.domain_size_x = imax;
     domain.domain_size_y = jmax;
 
@@ -233,13 +233,13 @@ void Case::set_file_names(std::string file_name) {
  */
 void Case::simulate() {
 
-    double t = 0.0;
-    double dt = _field.dt();
+    dtype t = 0.0;
+    dtype dt = _field.dt();
     int timestep = 0;
-    double output_counter = _output_freq;
-    double res; //Residual for Pressure SOR
+    dtype output_counter = _output_freq;
+    dtype res; //Residual for Pressure SOR
     int iter, n = 0;
-    double progress = 0.0;
+    dtype progress = 0.0;
     int barWidth = 70;
 
 
@@ -331,16 +331,16 @@ void Case::output_vtk(int timestep, int my_rank) {
     // Create grid
     vtkSmartPointer<vtkPoints> points = vtkSmartPointer<vtkPoints>::New();
 
-    double dx = _grid.dx();
-    double dy = _grid.dy();
+    dtype dx = _grid.dx();
+    dtype dy = _grid.dy();
 
-    double x = _grid.domain().imin * dx;
-    double y = _grid.domain().jmin * dy;
+    dtype x = _grid.domain().imin * dx;
+    dtype y = _grid.domain().jmin * dy;
 
     { y += dy; }
     { x += dx; }
 
-    double z = 0;
+    dtype z = 0;
     for (int col = 0; col < _grid.domain().size_y + 1; col++) {
         x = _grid.domain().imin * dx;
         { x += dx; }
@@ -373,18 +373,18 @@ void Case::output_vtk(int timestep, int my_rank) {
     // Print pressure and temperature from bottom to top
     for (int j = 1; j < _grid.domain().size_y + 1; j++) {
         for (int i = 1; i < _grid.domain().size_x + 1; i++) {
-            double pressure = _field.p(i, j);
+            dtype pressure = _field.p(i, j);
             Pressure->InsertNextTuple(&pressure);
 
             if (_field.isHeatTransfer()) {
-            double temparature = _field.t(i, j);
+            dtype temparature = _field.t(i, j);
             Temparature->InsertNextTuple(&temparature);
             }
         }
     }
 
     // Temp Velocity
-    double vel[3];
+    dtype vel[3];
     vel[2] = 0; // Set z component to 0
 
     // Print Velocity from bottom to top

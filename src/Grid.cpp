@@ -372,9 +372,9 @@ int Grid::jmaxb() const { return _domain.size_y + 2; }
 
 Cell Grid::cell(int i, int j) const { return _cells(i, j); }
 
-double Grid::dx() const { return _domain.dx; }
+dtype Grid::dx() const { return _domain.dx; }
 
-double Grid::dy() const { return _domain.dy; }
+dtype Grid::dy() const { return _domain.dy; }
 
 const Domain &Grid::domain() const { return _domain; }
 

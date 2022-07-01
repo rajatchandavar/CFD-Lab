@@ -15,13 +15,13 @@ class CUDA_solver{
 
     private:
     
-    double *gpu_T, *gpu_T_temp;
-    double *gpu_U;
-    double *gpu_V;
-    double *gpu_P;
-    double *gpu_F;
-    double *gpu_G;
-    double *gpu_RS;
+    dtype *gpu_T, *gpu_T_temp;
+    dtype *gpu_U;
+    dtype *gpu_V;
+    dtype *gpu_P;
+    dtype *gpu_F;
+    dtype *gpu_G;
+    dtype *gpu_RS;
 
 
     int *gpu_geometry_data;
@@ -35,18 +35,18 @@ class CUDA_solver{
     int *gpu_hot_id;
     int *gpu_cold_id; 
 
-    double *gpu_POUT;
-    double *gpu_UIN;
-    double *gpu_VIN;
+    dtype *gpu_POUT;
+    dtype *gpu_UIN;
+    dtype *gpu_VIN;
 
-    double *gpu_wall_temp_a, *gpu_wall_temp_h, *gpu_wall_temp_c;
+    dtype *gpu_wall_temp_a, *gpu_wall_temp_h, *gpu_wall_temp_c;
 
     int domain_size, grid_size, grid_size_x, grid_size_y;
-    double *gpu_dx, *gpu_dy, *gpu_dt, *gpu_gamma, *gpu_alpha, *gpu_beta, *gpu_nu;
-    double *gpu_gx, *gpu_gy;
+    dtype *gpu_dx, *gpu_dy, *gpu_dt, *gpu_gamma, *gpu_alpha, *gpu_beta, *gpu_nu;
+    dtype *gpu_gx, *gpu_gy;
 
     int *gpu_size_x, *gpu_size_y;
-    double *gpu_wall_velocity;
+    dtype *gpu_wall_velocity;
 
     bool *gpu_isHeatTransfer;
 
@@ -54,11 +54,11 @@ class CUDA_solver{
 
     int *geom_check;
 
-    double UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c;
+    dtype UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c;
     public:
 
-    void initialize(Fields &, Grid &, double, double, double, double, double);
-    void pre_process(Fields &, Grid &, Discretization &, double);
+    void initialize(Fields &, Grid &, dtype, dtype, dtype, dtype, dtype);
+    void pre_process(Fields &, Grid &, Discretization &, dtype);
     void post_process(Fields &);
     void calc_T();
     void apply_boundary();

@@ -47,9 +47,9 @@ class Grid {
     const Domain &domain() const;
 
     /// access cell size in x-direction
-    double dx() const;
+    dtype dx() const;
     /// access cell size in y-direction
-    double dy() const;
+    dtype dy() const;
 
     /**
      * @brief Access inflow cells
@@ -111,8 +111,8 @@ class Grid {
 
     Domain _domain;
 
-    double _dx;
-    double _dy;
+    dtype _dx;
+    dtype _dy;
 
     std::vector<std::vector<int>> geometry_data;
 

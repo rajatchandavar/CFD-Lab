@@ -28,7 +28,7 @@ class Fields {
      * @param[in] thermal expansion co-efficient - beta
      *
      */
-    Fields(double _nu, double _dt, double _tau, int imax, int jmax, double UI, double VI, double PI, double TI, const Grid &grid, double _alpha, double _beta, bool _isHeatTransfer, double gx, double gy);
+    Fields(dtype _nu, dtype _dt, dtype _tau, int imax, int jmax, dtype UI, dtype VI, dtype PI, dtype TI, const Grid &grid, dtype _alpha, dtype _beta, bool _isHeatTransfer, dtype gx, dtype gy);
 
     /**
      * @brief Calculates the convective and diffusive fluxes in x and y
@@ -71,89 +71,89 @@ class Fields {
      * @param[in] grid in which the calculations are done
      *
      */
-    double calculate_dt(Grid &grid);
+    dtype calculate_dt(Grid &grid);
 
     /// x-velocity index based access and modify
-    double &u(int i, int j);
+    dtype &u(int i, int j);
 
     /// y-velocity index based access and modify
-    double &v(int i, int j);
+    dtype &v(int i, int j);
 
     /// pressure index based access and modify
-    double &p(int i, int j);
+    dtype &p(int i, int j);
 
     /// temperature index based access and modify
-    double &t(int i, int j);
+    dtype &t(int i, int j);
 
     /// RHS index based access and modify
-    double &rs(int i, int j);
+    dtype &rs(int i, int j);
 
     /// x-momentum flux index based access and modify
-    double &f(int i, int j);
+    dtype &f(int i, int j);
 
     /// y-momentum flux index based access and modify
-    double &g(int i, int j);
+    dtype &g(int i, int j);
 
     /// get timestep size
-    double dt() const;
+    dtype dt() const;
 
     /// pressure matrix access and modify
-    Matrix<double> &p_matrix();
+    Matrix<dtype> &p_matrix();
 
     /// Temperature matrix access and modify
-    Matrix<double> &t_matrix();
+    Matrix<dtype> &t_matrix();
 
-    Matrix<double> &u_matrix();
+    Matrix<dtype> &u_matrix();
 
-    Matrix<double> &v_matrix();
+    Matrix<dtype> &v_matrix();
 
-    Matrix<double> &f_matrix();
+    Matrix<dtype> &f_matrix();
 
-    Matrix<double> &g_matrix();
+    Matrix<dtype> &g_matrix();
 
-    Matrix<double> &rs_matrix();
+    Matrix<dtype> &rs_matrix();
 
 
     /// function to check if heat transfer occurs
     bool isHeatTransfer();
 
-    double get_alpha();
-    double get_nu();
-    double get_beta();
+    dtype get_alpha();
+    dtype get_nu();
+    dtype get_beta();
 
-    double get_gx();
-    double get_gy();
+    dtype get_gx();
+    dtype get_gy();
 
   private:
     /// x-velocity matrix
-    Matrix<double> _U;
+    Matrix<dtype> _U;
     /// y-velocity matrix
-    Matrix<double> _V;
+    Matrix<dtype> _V;
     /// pressure matrix
-    Matrix<double> _P;
+    Matrix<dtype> _P;
     /// x-momentum flux matrix
-    Matrix<double> _F;
+    Matrix<dtype> _F;
     /// y-momentum flux matrix
-    Matrix<double> _G;
+    Matrix<dtype> _G;
     /// right hand side matrix
-    Matrix<double> _RS;
+    Matrix<dtype> _RS;
     // Temperature Matrix
-    Matrix<double> _T;
+    Matrix<dtype> _T;
 
     /// kinematic viscosity
-    double _nu;
+    dtype _nu;
     /// gravitional accelearation in x direction
-    double _gx{0.0};
+    dtype _gx{0.0};
     /// gravitional accelearation in y direction
-    double _gy{0.0};
+    dtype _gy{0.0};
     /// timestep size
-    double _dt;
+    dtype _dt;
     /// adaptive timestep coefficient
-    double _tau;
+    dtype _tau;
     /// thermal diffusivity alpha
-    double _alpha;
+    dtype _alpha;
     /// thermal expansion co-efficient
-    double _beta;
+    dtype _beta;
     /// Check for heat transfer
     bool _isHeatTransfer;
 

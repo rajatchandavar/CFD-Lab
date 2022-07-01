@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Datastructures.hpp"
 // If no geometry file is provided in the input file, lid driven cavity case
 // will run by default. In the Grid.cpp, geometry will be created following
 // PGM convention, which is:
@@ -9,7 +9,7 @@
 namespace LidDrivenCavity {
 const int moving_wall_id = 8;
 const int fixed_wall_id = 4;
-const double wall_velocity = 1.0;
+const dtype wall_velocity = 1.0;
 } 
 
 // If geometry file is provided in the input file, the PGM convention is:
@@ -22,7 +22,7 @@ const int moving_wall_id = 8;
 const int fixed_wall_id = 3;
 const int inflow_id = 1;
 const int outflow_id = 2;
-const double POUT = 0.0;
+const dtype POUT = 0.0;
 const int adiabatic_id = 5;
 const int hot_id = 6;
 const int cold_id = 7; 

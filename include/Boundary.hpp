@@ -29,13 +29,13 @@ class Boundary {
 class FixedWallBoundary : public Boundary {
   public:
     FixedWallBoundary(std::vector<Cell *> cells);
-    FixedWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_temperature);
+    FixedWallBoundary(std::vector<Cell *> cells, std::map<int, dtype> wall_temperature);
     virtual ~FixedWallBoundary() = default;
     virtual void apply(Fields &field);
 
   private:
     std::vector<Cell *> _cells;
-    std::map<int, double> _wall_temperature;
+    std::map<int, dtype> _wall_temperature;
 };
 
 /**
@@ -45,16 +45,16 @@ class FixedWallBoundary : public Boundary {
  */
 class MovingWallBoundary : public Boundary {
   public:
-    MovingWallBoundary(std::vector<Cell *> cells, double wall_velocity);
-    MovingWallBoundary(std::vector<Cell *> cells, std::map<int, double> wall_velocity,
-                       std::map<int, double> wall_temperature);
+    MovingWallBoundary(std::vector<Cell *> cells, dtype wall_velocity);
+    MovingWallBoundary(std::vector<Cell *> cells, std::map<int, dtype> wall_velocity,
+                       std::map<int, dtype> wall_temperature);
     virtual ~MovingWallBoundary() = default;
     virtual void apply(Fields &field);
 
   private:
     std::vector<Cell *> _cells;
-    std::map<int, double> _wall_velocity;
-    std::map<int, double> _wall_temperature;
+    std::map<int, dtype> _wall_velocity;
+    std::map<int, dtype> _wall_temperature;
 };
 
 /**
@@ -65,17 +65,17 @@ class MovingWallBoundary : public Boundary {
 
 class InFlowBoundary : public Boundary {
   public:
-    InFlowBoundary(std::vector<Cell *> cells, double UIN, double VIN);
-    InFlowBoundary(std::vector<Cell *> cells, std::map<int, double> UIN, std::map<int, double> VIN,
-                       std::map<int, double> wall_temperature);
+    InFlowBoundary(std::vector<Cell *> cells, dtype UIN, dtype VIN);
+    InFlowBoundary(std::vector<Cell *> cells, std::map<int, dtype> UIN, std::map<int, dtype> VIN,
+                       std::map<int, dtype> wall_temperature);
     virtual ~InFlowBoundary() = default;
     virtual void apply(Fields &field);
 
   private:
     std::vector<Cell *> _cells;
-    std::map<int, double> _UIN;
-    std::map<int, double> _VIN;
-    std::map<int, double> _wall_temperature;
+    std::map<int, dtype> _UIN;
+    std::map<int, dtype> _VIN;
+    std::map<int, dtype> _wall_temperature;
 };
 
 /**
@@ -86,14 +86,14 @@ class InFlowBoundary : public Boundary {
 
 class OutFlowBoundary : public Boundary {
   public:
-    OutFlowBoundary(std::vector<Cell *> cells, double POUT);
-    OutFlowBoundary(std::vector<Cell *> cells, std::map<int, double> POUT,
-                       std::map<int, double> wall_temperature);
+    OutFlowBoundary(std::vector<Cell *> cells, dtype POUT);
+    OutFlowBoundary(std::vector<Cell *> cells, std::map<int, dtype> POUT,
+                       std::map<int, dtype> wall_temperature);
     virtual ~OutFlowBoundary() = default;
     virtual void apply(Fields &field);
 
   private:
     std::vector<Cell *> _cells;
-    std::map<int, double> _POUT;
-    std::map<int, double> _wall_temperature;
+    std::map<int, dtype> _POUT;
+    std::map<int, dtype> _wall_temperature;
 };
