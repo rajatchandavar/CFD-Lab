@@ -247,6 +247,8 @@ void Case::simulate() {
 
     while(t < _t_end && progress < 1){
         dt = _field.calculate_dt(_grid);
+        //cuda_solver.calc_dt();
+        //dt = _field.timestep;
         t = t + dt;
         ++timestep;
        
@@ -295,7 +297,10 @@ void Case::simulate() {
         
         " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
 
-        _field.calculate_velocities(_grid);
+        //_field.calculate_velocities(_grid);
+        cuda_solver.pre_process(_field, _grid, _discretization, dt);
+        cuda_solver.calc_velocities();
+        cuda_solver.post_process(_field);
 
         if(t >= output_counter) {
 

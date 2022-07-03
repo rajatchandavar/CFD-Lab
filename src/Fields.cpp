@@ -12,7 +12,7 @@ Fields::Fields(dtype nu, dtype dt, dtype tau, int imax, int jmax, dtype UI, dtyp
     _F = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
     _G = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
     _RS = Matrix<dtype>(imax + 2, jmax + 2, 0.0);
-
+    timestep = dt;
     if (_isHeatTransfer){
         _T = Matrix<dtype>(imax + 2, jmax + 2, TI);
     }
@@ -236,13 +236,15 @@ Matrix<dtype> &Fields::rs_matrix() { return _RS; }
 
 bool Fields::isHeatTransfer() { return _isHeatTransfer;}
 
-dtype Fields::dt() const { return _dt; }
+dtype Fields::dt() { return _dt; }
 
 dtype Fields::get_alpha() { return _alpha;}
 
 dtype Fields::get_nu() { return _nu;}
 
 dtype Fields::get_beta() { return _beta;}
+
+dtype Fields::get_tau() { return _tau;}
 
 dtype Fields::get_gx() { return _gx;}
 

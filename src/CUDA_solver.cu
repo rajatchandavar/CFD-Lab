@@ -1,7 +1,7 @@
 #include "CUDA_solver.cuh"
 
 #ifndef __CUDACC__
-#define __CADACC__
+#define __CUDACC__
 #endif
 #define at(var, i, j) var[(j) * (*gpu_size_x) + (i)]
 
@@ -377,6 +377,127 @@ __global__ void calc_rs_kernel(dtype *gpu_RS, dtype *gpu_F, dtype *gpu_G,dtype *
         at(gpu_RS,i,j) = 1 / (*gpu_dt) * ((at(gpu_F,i, j) - at(gpu_F,i - 1, j)) / (*gpu_dx) + (at(gpu_G,i, j) - at(gpu_G,i, j - 1)) / (*gpu_dy));
 }
 
+__global__ void calc_velocities_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, int *gpu_size_x, int *gpu_size_y, dtype *gpu_dt, int *gpu_geometry_data)
+{   
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0)
+    {   
+        if (( at(gpu_geometry_data, i+1, j)== 0) || (at(gpu_geometry_data, i+1, j) == 2)) {
+            at(gpu_U,i, j) = at(gpu_F,i, j) - ((*gpu_dt)/(*gpu_dx)) * (at(gpu_P,i + 1, j) - at(gpu_P,i, j));           
+        }
+        if ((at(gpu_geometry_data, i, j+1)==0) || (at(gpu_geometry_data, i, j+1)==2)) {
+            at(gpu_V,i, j) = at(gpu_G,i, j) - ((*gpu_dt)/(*gpu_dy)) * (at(gpu_P,i, j + 1) - at(gpu_P,i, j));
+        }
+    }
+}
+
+__global__ void max_element_kernel(dtype *array, dtype *gpu_umax, dtype *gpu_vmax, int *size, int *d_mutex, char *c)
+{
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    int istride = gridDim.x*blockIdx.x;
+    int jstride = gridDim.y*blockIdx.y;
+
+    int offset = 0;
+    dtype temp = 0;
+    __shared__ dtype cache[128];
+
+
+    if(*c == 'u')
+    {
+        while(i+offset<*size)
+        {   
+            temp = fmaxf(temp,array[i+istride]);
+            offset+=istride;
+        }
+
+        cache[threadIdx.x] = temp;
+	    __syncthreads();
+
+        // Reduction 
+
+        unsigned int dim_i = blockDim.x/2;
+        while(dim_i != 0){
+            if(threadIdx.x < dim_i){
+                cache[threadIdx.x] = fmaxf(cache[threadIdx.x], cache[threadIdx.x + dim_i]);
+            }
+
+            __syncthreads();
+            dim_i /= 2;
+        }
+
+        if(threadIdx.x == 0){
+            while(atomicCAS(d_mutex,0,1) != 0);  //lock
+            *(gpu_umax) = fmaxf(*gpu_umax, cache[0]);
+            atomicExch(d_mutex, 0);  //unlock
+        }
+
+    }
+
+    else if(*c=='v')
+    {
+        while(j+offset<*size)
+        {   
+            temp = fmaxf(temp,array[j+jstride]);
+            offset+=jstride;
+        }
+
+        cache[threadIdx.y] = temp;
+	    __syncthreads();
+
+        // Reduction 
+        
+        unsigned int dim_j = blockDim.y/2;
+        
+        while(dim_j != 0){
+            if(threadIdx.y < dim_j){
+                cache[threadIdx.y] = fmaxf(cache[threadIdx.y], cache[threadIdx.y + dim_j]);
+            }
+
+            __syncthreads();
+            dim_j /= 2;
+        }
+
+        if(threadIdx.y == 0){
+            while(atomicCAS(d_mutex,0,1) != 0);  //lock
+            *(gpu_vmax)= fmaxf(*gpu_vmax, cache[0]);
+            atomicExch(d_mutex, 0);  //unlock
+        }
+
+    }
+
+  
+
+}
+
+
+
+// __global__ void calc_dt_kernel(dtype *gpu_U, dtype *gpu_V,dtype *gpu_dx, dtype *gpu_dy, int *gpu_size_x, int *gpu_size_y, dtype *nu, dtype *gpu_alpha, dtype *gpu_tau, dtype *gpu_dt)
+// {
+
+//     dtype t[4];
+//     t[0] = 1 / (2 * (*gpu_nu) * (1/((*gpu_dx)*(*gpu_dx)) + 1/((*gpu_dy)*(*gpu_dy))));
+//     dtype u_max = 0, v_max = 0, result;
+//     u_max = max_element<<<>>>(gpu_U,*gpu_size_x,"u");
+//     v_max = max_element(gpu_V,*gpu_size_y,"v");
+//     t[1] = (*gpu_dx) / u_max;
+//     t[2] = (*gpu_dy) / v_max;   
+//     // Stability constraint for explicit time stepping according to equation (37)
+//     t[3] = 1 / (2 * (*gpu_alpha) * (1/((*gpu_dx)*(*gpu_dx)) + 1/((*gpu_dy)*(*gpu_dy))));
+//     dtype temp_dt =t[0];
+//     for(int i=1; i<4; i++)
+//     {
+//         if(t[i]<temp_dt)
+//             temp_dt = t[i];
+//     }
+//     result = (*gpu_tau) * temp_dt;
+//     *gpu_dt = result;
+
+// }
+
 void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu_VIN, dtype cpu_wall_temp_a, dtype cpu_wall_temp_h, dtype cpu_wall_temp_c) {
 
     UIN = cpu_UIN;
@@ -413,6 +534,7 @@ void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu
     cudaMalloc((void **)&gpu_gamma, sizeof(dtype));
     cudaMalloc((void **)&gpu_beta, sizeof(dtype));
     cudaMalloc((void **)&gpu_nu, sizeof(dtype));
+    cudaMalloc((void **)&gpu_tau, sizeof(dtype));
     cudaMalloc((void **)&gpu_gx, sizeof(dtype));
     cudaMalloc((void **)&gpu_gy, sizeof(dtype));
 
@@ -432,11 +554,15 @@ void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu
     cudaMalloc((void **)&gpu_wall_temp_h, sizeof(dtype));
     cudaMalloc((void **)&gpu_wall_temp_c, sizeof(dtype));
     cudaMalloc((void **)&gpu_isHeatTransfer, sizeof(bool));
+    cudaMalloc((void**)&d_mutex, sizeof(int));
 
     cudaMalloc((void **)&gpu_wall_velocity, sizeof(dtype));
     cudaMalloc((void **)&gpu_UIN, sizeof(dtype));
     cudaMalloc((void **)&gpu_VIN, sizeof(dtype));
     cudaMalloc((void **)&gpu_POUT, sizeof(dtype));
+
+    cudaMalloc((void **)&gpu_umax, sizeof(dtype));
+    cudaMalloc((void **)&gpu_vmax, sizeof(dtype));
 }
 
 void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discretization, dtype cpu_dt) {
@@ -456,7 +582,7 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(gpu_F, field.f_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_G, field.g_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_RS, field.rs_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
-
+    cudaMemset(d_mutex, 0, sizeof(float));
     dtype var = grid.dx();
     cudaMemcpy(gpu_dx, &var, sizeof(dtype), cudaMemcpyHostToDevice);
 
@@ -478,14 +604,28 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     var = field.get_nu();
     cudaMemcpy(gpu_nu, &var, sizeof(dtype), cudaMemcpyHostToDevice);
 
+    var = field.get_tau();
+    cudaMemcpy(gpu_tau, &var, sizeof(dtype), cudaMemcpyHostToDevice);
+
     var = field.get_gx();
     cudaMemcpy(gpu_gx, &var, sizeof(dtype), cudaMemcpyHostToDevice);
 
     var = field.get_gy();
     cudaMemcpy(gpu_gy, &var, sizeof(dtype), cudaMemcpyHostToDevice);
 
+    var = 0;
+    cudaMemcpy(gpu_umax, &var, sizeof(dtype), cudaMemcpyHostToDevice);
+
+    var = 0;
+    cudaMemcpy(gpu_vmax, &var, sizeof(dtype), cudaMemcpyHostToDevice);
+
     cudaMemcpy(gpu_size_x, &grid_size_x, sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_size_y, &grid_size_y, sizeof(int), cudaMemcpyHostToDevice);
+
+    char c = 'u';
+    cudaMemcpy(c1, &c, sizeof(char), cudaMemcpyHostToDevice);
+    c = 'v';
+    cudaMemcpy(c2, &c, sizeof(char), cudaMemcpyHostToDevice);
 
     int var1 = GEOMETRY_PGM::moving_wall_id;
     cudaMemcpy(gpu_moving_wall_id, &(var1), sizeof(int), cudaMemcpyHostToDevice);
@@ -545,6 +685,41 @@ void CUDA_solver::calc_rs() {
     calc_rs_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_F,gpu_G, gpu_dx,gpu_dy, gpu_dt, gpu_size_x, gpu_size_y, gpu_geometry_data);
 }
 
+void CUDA_solver::calc_velocities() {
+    num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
+    calc_velocities_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F, gpu_G, gpu_U, gpu_V, gpu_P, gpu_dx, gpu_dy, gpu_size_x, gpu_size_y, gpu_dt, gpu_geometry_data);
+
+}
+
+void CUDA_solver::calc_dt() {
+
+    num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
+    dtype t[4];
+    dtype result;
+    
+    max_element_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_U, gpu_umax, gpu_vmax,gpu_size_x,d_mutex,c1);
+    max_element_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_V,gpu_umax, gpu_vmax, gpu_size_y, d_mutex,c2);
+
+    t[0] = 1 / (2 * (*gpu_nu) * (1/((*gpu_dx)*(*gpu_dx)) + 1/((*gpu_dy)*(*gpu_dy))));
+    t[1] = (*gpu_dx) / (*gpu_umax);
+    t[2] = (*gpu_dy) / (*gpu_vmax);   
+    t[3] = 1 / (2 * (*gpu_alpha) * (1/((*gpu_dx)*(*gpu_dx)) + 1/((*gpu_dy)*(*gpu_dy))));
+
+    dtype temp_dt =t[0];
+
+    for(int i=1; i<4; i++)
+    {
+        if(t[i]<temp_dt)
+            temp_dt = t[i];
+    }
+
+    result = (*gpu_tau) * temp_dt;
+    *gpu_dt = result;
+    
+    //calc_dt_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_U,gpu_V,gpu_dx, gpu_dy,gpu_nu,gpu_alpha, gpu_tau, gpu_dt);
+
+}
+
 void CUDA_solver::post_process(Fields &field) {
     
     if (field.isHeatTransfer())
@@ -556,6 +731,7 @@ void CUDA_solver::post_process(Fields &field) {
     cudaMemcpy((void *)field.u_matrix().data(), gpu_U, grid_size * sizeof(dtype), cudaMemcpyDeviceToHost);
     cudaMemcpy((void *)field.v_matrix().data(), gpu_V, grid_size * sizeof(dtype), cudaMemcpyDeviceToHost);
     cudaMemcpy((void *)field.p_matrix().data(), gpu_P, grid_size * sizeof(dtype), cudaMemcpyDeviceToHost);
+    cudaMemcpy(&field.timestep, gpu_dt, sizeof(dtype), cudaMemcpyDeviceToHost);
 
 }
 
@@ -578,6 +754,7 @@ CUDA_solver::~CUDA_solver() {
     cudaFree(gpu_beta);
     cudaFree(gpu_gamma);
     cudaFree(gpu_alpha);
+    cudaFree(gpu_tau);
     cudaFree(gpu_size_x);
     cudaFree(gpu_size_y);
     cudaFree(gpu_fluid_id);
@@ -596,7 +773,11 @@ CUDA_solver::~CUDA_solver() {
     cudaFree(gpu_VIN);
     cudaFree(gpu_POUT);
     cudaFree(gpu_wall_velocity);
-
+    cudaFree(gpu_umax);
+    cudaFree(gpu_vmax);
+    cudaFree(c1);
+    cudaFree(c2);
+    cudaFree(d_mutex);
 
     cudaFree(geom_check);
 }

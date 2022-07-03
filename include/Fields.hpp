@@ -95,8 +95,8 @@ class Fields {
     dtype &g(int i, int j);
 
     /// get timestep size
-    dtype dt() const;
-
+    dtype dt();
+    dtype timestep;
     /// pressure matrix access and modify
     Matrix<dtype> &p_matrix();
 
@@ -120,6 +120,7 @@ class Fields {
     dtype get_alpha();
     dtype get_nu();
     dtype get_beta();
+    dtype get_tau();
 
     dtype get_gx();
     dtype get_gy();
