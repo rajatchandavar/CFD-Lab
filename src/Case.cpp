@@ -234,7 +234,7 @@ void Case::set_file_names(std::string file_name) {
 void Case::simulate() {
 
     dtype t = 0.0;
-    dtype dt = _field.dt();
+    dtype dt = *(_field.dt());
     int timestep = 0;
     dtype output_counter = _output_freq;
     dtype res; //Residual for Pressure SOR

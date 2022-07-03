@@ -57,6 +57,7 @@ class CUDA_solver{
     int *geom_check;
     int *d_mutex;
 
+    dim3 *gpu_numblocks, *gpu_blocksize;
     dtype UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c;
     public:
 
