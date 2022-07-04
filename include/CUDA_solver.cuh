@@ -40,7 +40,6 @@ class CUDA_solver{
     dtype *gpu_VIN;
 
     dtype *gpu_umax, *gpu_vmax;
-     char *c1, *c2;
     dtype *gpu_wall_temp_a, *gpu_wall_temp_h, *gpu_wall_temp_c;
 
     int domain_size, grid_size, grid_size_x, grid_size_y;
@@ -54,11 +53,12 @@ class CUDA_solver{
 
     dim3 block_size, num_blocks, block_size_2d, num_blocks_2d;
 
-    int *geom_check;
+    //int *geom_check;
     int *d_mutex;
 
-    dim3 *gpu_numblocks, *gpu_blocksize;
+    //dim3 *gpu_numblocks, *gpu_blocksize;
     dtype UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c;
+    dtype cpu_umax, cpu_vmax, cpu_dx, cpu_dy, cpu_nu, cpu_alpha, cpu_tau;
     public:
 
     void initialize(Fields &, Grid &, dtype, dtype, dtype, dtype, dtype);
@@ -69,7 +69,7 @@ class CUDA_solver{
     void calc_fluxes();
     void calc_rs();
     void calc_velocities();
-    void calc_dt();
+    dtype calc_dt();
     dim3 get_num_blocks(int);
     dim3 get_num_blocks_2d(int, int);
     

@@ -246,17 +246,20 @@ void Case::simulate() {
     output_vtk(timestep); // write the zeroth timestep
 
     while(t < _t_end && progress < 1){
-        dt = _field.calculate_dt(_grid);
-        //cuda_solver.calc_dt();
-        //dt = _field.timestep;
-        t = t + dt;
-        ++timestep;
+
        
         // for (int i = 0; i < _boundaries.size(); i++) {
         //     _boundaries[i]->apply(_field);
         // }
 
+        // dt = _field.calculate_dt(_grid);
+        // cuda_solver.pre_process(_field, _grid, _discretization, dt);
+
         cuda_solver.pre_process(_field, _grid, _discretization, dt);
+        dt = cuda_solver.calc_dt();
+        t = t + dt;
+        ++timestep;
+
         cuda_solver.apply_boundary();
 
         if (_field.isHeatTransfer()) { 
