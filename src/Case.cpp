@@ -162,7 +162,7 @@ Case::Case(std::string file_name, int argn, char **args) {
         _boundaries.push_back(std::make_unique<OutFlowBoundary>(_grid.outflow_cells(), GEOMETRY_PGM::POUT));
     }
 
-    cuda_solver.initialize(_field, _grid, UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c);
+    cuda_solver.initialize(_field, _grid, UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c, omg);
 }
 
 void Case::set_file_names(std::string file_name) {
@@ -235,13 +235,14 @@ void Case::simulate() {
 
     dtype t = 0.0;
     dtype dt = *(_field.dt());
+    dtype fluid_cells_size = _grid.fluid_cells().size();
     int timestep = 0;
     dtype output_counter = _output_freq;
-    dtype res; //Residual for Pressure SOR
-    int iter, n = 0;
+    // dtype res; //Residual for Pressure SOR
+    // int iter, n = 0;
+    int n = 0;
     dtype progress = 0.0;
     int barWidth = 70;
-
 
     output_vtk(timestep); // write the zeroth timestep
 
@@ -281,24 +282,26 @@ void Case::simulate() {
         
         // _field.calculate_rs(_grid);
 
-        iter = 0;
+        cuda_solver.calc_pressure(_max_iter, _tolerance, fluid_cells_size, t, dt);
 
-        do{
+        // iter = 0;
 
-            for (int i = 0; i < _boundaries.size(); i++) {
-                _boundaries[i]->apply(_field);
-            }
-            res = _pressure_solver->solve(_field, _grid, _boundaries);
-            iter++;
-        }while(res > _tolerance && iter < _max_iter);
+        // do{
 
-        if (iter == _max_iter) {
-            std::cout << "Max iteration reached at " << t<<" s \n";
-        }
+        //     for (int i = 0; i < _boundaries.size(); i++) {
+        //         _boundaries[i]->apply(_field);
+        //     }
+        //     res = _pressure_solver->solve(_field, _grid, _boundaries);
+        //     iter++;
+        // }while(res > _tolerance && iter < _max_iter);
 
-        std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
+        // if (iter == _max_iter) {
+        //     std::cout << "Max iteration reached at " << t<<" s \n";
+        // }
+
+        // std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
-        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+        // " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
 
         //_field.calculate_velocities(_grid);
         cuda_solver.pre_process(_field, _grid, _discretization, dt);

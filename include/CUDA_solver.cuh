@@ -23,7 +23,6 @@ class CUDA_solver{
     dtype *gpu_G;
     dtype *gpu_RS;
 
-
     int *gpu_geometry_data;
 
     int *gpu_fluid_id;
@@ -34,10 +33,13 @@ class CUDA_solver{
     int *gpu_adiabatic_id;
     int *gpu_hot_id;
     int *gpu_cold_id; 
+    int *gpu_fluid_cells_size;
 
     dtype *gpu_POUT;
     dtype *gpu_UIN;
     dtype *gpu_VIN;
+
+    dtype *gpu_omega, *gpu_coeff, *gpu_rloc, *gpu_val, *gpu_res;
 
     dtype *gpu_umax, *gpu_vmax;
     dtype *gpu_wall_temp_a, *gpu_wall_temp_h, *gpu_wall_temp_c;
@@ -61,13 +63,14 @@ class CUDA_solver{
     dtype cpu_umax, cpu_vmax, cpu_dx, cpu_dy, cpu_nu, cpu_alpha, cpu_tau;
     public:
 
-    void initialize(Fields &, Grid &, dtype, dtype, dtype, dtype, dtype);
+    void initialize(Fields &, Grid &, dtype, dtype, dtype, dtype, dtype, dtype);
     void pre_process(Fields &, Grid &, Discretization &, dtype);
     void post_process(Fields &);
     void calc_T();
     void apply_boundary();
     void calc_fluxes();
     void calc_rs();
+    void calc_pressure(int, dtype, int, dtype, dtype);
     void calc_velocities();
     dtype calc_dt();
     dim3 get_num_blocks(int);
