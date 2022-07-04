@@ -1,6 +1,8 @@
 #include "CUDA_solver.cuh"
 #include <cmath>
 #include <iostream>
+#include <iomanip> 
+#include <math.h>
 
 #ifndef __CUDACC__
 #define __CUDACC__
@@ -69,17 +71,17 @@ __device__ dtype convection_Tu(dtype *gpu_T, dtype *gpu_U, int i, int j, dtype g
 
 __device__ dtype convection_Tv(dtype *gpu_T, dtype *gpu_V, int i, int j, dtype gpu_dx, dtype gpu_dy, dtype gpu_gamma, int *gpu_size_x) {
     dtype result;
-    dtype result = 1 / gpu_dy * (at(gpu_V, i, j) * interpolate(gpu_T, i, j, 0, 1, gpu_size_x) - at(gpu_V, i, j - 1) * interpolate(gpu_T, i, j - 1, 0, 1, gpu_size_x)) +
+    result = 1 / gpu_dy * (at(gpu_V, i, j) * interpolate(gpu_T, i, j, 0, 1, gpu_size_x) - at(gpu_V, i, j - 1) * interpolate(gpu_T, i, j - 1, 0, 1, gpu_size_x)) +
              gpu_gamma / gpu_dy * (fabsf(at(gpu_V, i, j)) * (at(gpu_T, i, j) - at(gpu_T, i, j + 1)) / 2 - fabsf(at(gpu_V, i, j - 1)) * (at(gpu_T, i, j - 1) - at(gpu_T, i, j)) / 2);
     return result;
 }
 
-__device__ dtype sor_helper(dtype *gpu_P, int i, int j, dtype gpu_dx, dtype gpu_dy) {
+__device__ dtype sor_helper(dtype *gpu_P, int i, int j, dtype gpu_dx, dtype gpu_dy, int *gpu_size_x) {
     dtype result = (at(gpu_P,i + 1, j) + at(gpu_P,i - 1, j)) / (gpu_dx * gpu_dx) + (at(gpu_P,i, j + 1) + at(gpu_P,i, j - 1)) / (gpu_dy * gpu_dy);
     return result;
 }
 
-__device__ dtype laplacian(dtype *gpu_P, int i, int j, dtype gpu_dx, dtype gpu_dy) {
+__device__ dtype laplacian(dtype *gpu_P, int i, int j, dtype gpu_dx, dtype gpu_dy, int *gpu_size_x) {
     dtype result = (at(gpu_P,i + 1, j) - 2.0 * at(gpu_P,i, j) + at(gpu_P,i - 1, j)) / (gpu_dx * gpu_dx) +
                    (at(gpu_P,i, j + 1) - 2.0 * at(gpu_P,i, j) + at(gpu_P,i, j - 1)) / (gpu_dy * gpu_dy);
     return result;
@@ -382,7 +384,9 @@ __global__ void fluxes_bc_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype
     }
 }
 
-__global__ void solve_pressure(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype *gpu_coeff, dtype *gpu_res, dtype *gpu_rloc, dtype *gpu_val, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
+__global__ void solve_pressure(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
+*gpu_coeff, dtype *gpu_res, dtype *gpu_rloc, dtype *gpu_val, int *gpu_size_x, int *gpu_size_y, int
+*gpu_fluid_cells_size, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -390,7 +394,7 @@ __global__ void solve_pressure(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype
 
     if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0){
         at(gpu_P,i, j) = (1.0 - *gpu_omega) * at(gpu_P,i, j) +
-                        (*gpu_coeff) * (sor_helper(gpu_P, i, j, gpu_dx, gpu_dy) - at(gpu_RS,i, j));
+                        (*gpu_coeff) * (sor_helper(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j));
     }
 
     *gpu_res = 0.0;
@@ -399,14 +403,14 @@ __global__ void solve_pressure(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype
 
     if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0) {
 
-        *gpu_val = laplacian(gpu_P, i, j, gpu_dx, gpu_dy) - at(gpu_RS,i, j);
+        *gpu_val = laplacian(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j);
         *gpu_rloc += (*gpu_val * (*gpu_val));
     
     }
 
     // {
-    //     gpu_res = gpu_rloc / *gpu_fluid_cells_size;
-    //     gpu_res = std::sqrt(gpu_res);
+         *gpu_res = *gpu_rloc / *gpu_fluid_cells_size;
+         *gpu_res = sqrt(*gpu_res);
     // }
 
 }
@@ -626,7 +630,6 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(gpu_wall_temp_h, &wall_temp_h, sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_wall_temp_c, &wall_temp_c, sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_omega, &omg, sizeof(dtype), cudaMemcpyHostToDevice);
-    cudaMemcpy(gpu_itermax, &itermax, sizeof(int), cudaMemcpyHostToDevice);
 
     var = LidDrivenCavity::wall_velocity;
     cudaMemcpy(gpu_wall_velocity, &var, sizeof(dtype), cudaMemcpyHostToDevice);
@@ -649,20 +652,19 @@ void CUDA_solver::apply_boundary() {
 
 }
 
-void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, int fluid_cells_size, dtype t, dtype dt) {
+void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt) {
 
-    dtype res = 0., rloc=0.;
+    dtype res = 0.;
     int iter = 0;
 
     do{
 
         apply_boundary();
 
-        solve_pressure<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_res, gpu_rloc, gpu_val, gpu_size_x, gpu_size_y, gpu_geometry_data)
-        cudaMemcpy(rloc, &gpu_rloc, sizeof(dtype), cudaMemcpyDeviceToHost);
+        solve_pressure<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_res, gpu_rloc, gpu_val, gpu_size_x, gpu_size_y, gpu_fluid_cells_size, gpu_geometry_data);
+        cudaMemcpy((void *)res, gpu_res, sizeof(dtype), cudaMemcpyDeviceToHost);
 
-        res = rloc / fluid_cells_size;
-        res = std::sqrt(res);
+//        res = std::sqrt(res);
 
         iter++;
         }while(res > tolerance && iter < max_iter);

@@ -235,7 +235,6 @@ void Case::simulate() {
 
     dtype t = 0.0;
     dtype dt = *(_field.dt());
-    dtype fluid_cells_size = _grid.fluid_cells().size();
     int timestep = 0;
     dtype output_counter = _output_freq;
     // dtype res; //Residual for Pressure SOR
@@ -282,7 +281,7 @@ void Case::simulate() {
         
         // _field.calculate_rs(_grid);
 
-        cuda_solver.calc_pressure(_max_iter, _tolerance, fluid_cells_size, t, dt);
+        cuda_solver.calc_pressure(_max_iter, _tolerance, t, dt);
 
         // iter = 0;
 

@@ -59,8 +59,11 @@ class CUDA_solver{
     int *d_mutex;
 
     //dim3 *gpu_numblocks, *gpu_blocksize;
-    dtype UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c;
+    dtype UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c, omg;
     dtype cpu_umax, cpu_vmax, cpu_dx, cpu_dy, cpu_nu, cpu_alpha, cpu_tau;
+
+    int grid_fluid_cells_size;
+  
     public:
 
     void initialize(Fields &, Grid &, dtype, dtype, dtype, dtype, dtype, dtype);
@@ -70,7 +73,7 @@ class CUDA_solver{
     void apply_boundary();
     void calc_fluxes();
     void calc_rs();
-    void calc_pressure(int, dtype, int, dtype, dtype);
+    void calc_pressure(int, dtype, dtype, dtype);
     void calc_velocities();
     dtype calc_dt();
     dim3 get_num_blocks(int);
