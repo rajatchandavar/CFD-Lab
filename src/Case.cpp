@@ -237,98 +237,60 @@ void Case::simulate() {
     dtype dt = *(_field.dt());
     int timestep = 0;
     dtype output_counter = _output_freq;
-    // dtype res; //Residual for Pressure SOR
-    // int iter, n = 0;
-    int n = 0;
-    dtype progress = 0.0;
-    int barWidth = 70;
+    dtype res; //Residual for Pressure SOR
+    int iter;
 
     output_vtk(timestep); // write the zeroth timestep
 
-    while(t < _t_end && progress < 1){
+    cuda_solver.pre_process(_field, _grid, _discretization, dt);
 
-       
-        // for (int i = 0; i < _boundaries.size(); i++) {
-        //     _boundaries[i]->apply(_field);
-        // }
+    while(t < _t_end){
 
-        // dt = _field.calculate_dt(_grid);
-        // cuda_solver.pre_process(_field, _grid, _discretization, dt);
-
-        cuda_solver.pre_process(_field, _grid, _discretization, dt);
         dt = cuda_solver.calc_dt();
         t = t + dt;
         ++timestep;
 
         cuda_solver.apply_boundary();
-
         if (_field.isHeatTransfer()) { 
-            // _field.calculate_temperatures(_grid);
-            // cuda_solver.pre_process(_field, _grid, _discretization);
             cuda_solver.calc_T();
-            // cuda_solver.post_process(_field);
         }
-        
-
-        // _field.calculate_fluxes(_grid);
-
-        // cuda_solver.pre_process(_field, _grid, _discretization);
         cuda_solver.calc_fluxes();
-        // cuda_solver.post_process(_field);
-
         cuda_solver.calc_rs();
-        cuda_solver.post_process(_field);
-        
-        // _field.calculate_rs(_grid);
-
         cuda_solver.calc_pressure(_max_iter, _tolerance, t, dt);
+        cuda_solver.calc_velocities();
 
+        if(t >= output_counter) {
+            cuda_solver.post_process(_field);
+            output_vtk(timestep);
+            output_counter += _output_freq;
+        }
+
+        // // Original Implementation
+        // for (int i = 0; i < _boundaries.size(); i++) {
+        //     _boundaries[i]->apply(_field);
+        // }
+        // dt = _field.calculate_dt(_grid);
+        // _field.calculate_temperatures(_grid);
+        // _field.calculate_fluxes(_grid);
+        // _field.calculate_rs(_grid);
         // iter = 0;
-
         // do{
-
         //     for (int i = 0; i < _boundaries.size(); i++) {
         //         _boundaries[i]->apply(_field);
         //     }
         //     res = _pressure_solver->solve(_field, _grid, _boundaries);
         //     iter++;
         // }while(res > _tolerance && iter < _max_iter);
-
         // if (iter == _max_iter) {
         //     std::cout << "Max iteration reached at " << t<<" s \n";
         // }
-
         // std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
-        
         // " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
-
-        //_field.calculate_velocities(_grid);
-        cuda_solver.pre_process(_field, _grid, _discretization, dt);
-        cuda_solver.calc_velocities();
-        cuda_solver.post_process(_field);
-
-        if(t >= output_counter) {
-
-            output_vtk(timestep);
-            output_counter += _output_freq;
-        }
-
-        // progress =  t/_t_end; // for demonstration only
-        // std::cout << "[";
-        // int pos = barWidth * progress;
-        // for (int i = 0; i < barWidth; ++i) {
-        //     if (i < pos) 
-        //         std::cout << "=";
-        //     else if (i == pos) 
-        //         std::cout << ">";
-        //     else 
-        //         std::cout << " ";
+        // _field.calculate_velocities(_grid);
+        // if(t >= output_counter) {
+        //     output_vtk(timestep);
+        //     output_counter += _output_freq;
         // }
-        // std::cout << "] " << int(progress * 100.0) << " %\r";
-        // // << " Residual = "<< std::setw(12) << res << 
-        
-        // std::cout.flush();
-
     }
     std::cout<<"\n";
 

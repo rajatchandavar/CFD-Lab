@@ -277,7 +277,7 @@ __global__ void MovingWallBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dty
 __global__ void InFlowBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_UIN, dtype *gpu_VIN, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 1 && check_bound_east(i)) {
+    if (check_bound_east(i) && i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 1) {
         at(gpu_U,i,j) = (*gpu_UIN);
         at(gpu_V,i,j) = 2*(*gpu_VIN) - at(gpu_V,i + 1, j);
         at(gpu_P,i,j) = at(gpu_P,i + 1, j);
@@ -287,7 +287,7 @@ __global__ void InFlowBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *
 __global__ void OutFlowBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_POUT, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 2 && check_bound_west(i)) {
+    if (check_bound_west(i) && i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 2) {
             at(gpu_U,i,j) = at(gpu_U,i - 1,j);
             at(gpu_V,i,j) = at(gpu_V,i - 1,j);
             at(gpu_P,i,j) = 2*(*gpu_POUT) - at(gpu_P,i - 1, j);
@@ -384,35 +384,87 @@ __global__ void fluxes_bc_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype
     }
 }
 
-__global__ void solve_pressure(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
-*gpu_coeff, dtype *gpu_res, dtype *gpu_rloc, dtype *gpu_val, int *gpu_size_x, int *gpu_size_y, int
-*gpu_fluid_cells_size, int *gpu_geometry_data) {
+__global__ void solve_pressure_red_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
+*gpu_coeff, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
     *gpu_coeff = *gpu_omega / (2.0 * (1.0 / (*gpu_dx * *gpu_dx) + 1.0 / (*gpu_dy * *gpu_dy)));
 
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0){
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0 && (i + j)%2 != 0){
         at(gpu_P,i, j) = (1.0 - *gpu_omega) * at(gpu_P,i, j) +
                         (*gpu_coeff) * (sor_helper(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j));
     }
 
-    *gpu_res = 0.0;
-    *gpu_rloc = 0.0;
-    *gpu_val = 0.0;
+}
 
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0) {
+__global__ void solve_pressure_black_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
+*gpu_coeff, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-        *gpu_val = laplacian(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j);
-        *gpu_rloc += (*gpu_val * (*gpu_val));
-    
+    *gpu_coeff = *gpu_omega / (2.0 * (1.0 / (*gpu_dx * *gpu_dx) + 1.0 / (*gpu_dy * *gpu_dy)));
+
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0 && (i + j)%2 == 0){
+        at(gpu_P,i, j) = (1.0 - *gpu_omega) * at(gpu_P,i, j) +
+                        (*gpu_coeff) * (sor_helper(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j));
     }
 
-    // {
-         *gpu_res = *gpu_rloc / *gpu_fluid_cells_size;
-         *gpu_res = sqrt(*gpu_res);
-    // }
+}
 
+__global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_res, int *gpu_size_x, int *gpu_size_y, int *gpu_fluid_cells_size, int *gpu_geometry_data){
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int tid_x = threadIdx.x;
+    int tid_y = threadIdx.y;
+
+    dtype val, rloc;
+
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0){
+        val = laplacian(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j);
+        rloc = (val * val);
+    }
+
+
+    //Reduction operation of Residuals
+
+    //Local to each block
+    __shared__ dtype resdata[BLOCK_SIZE_X][BLOCK_SIZE_Y];
+
+    //Filling resdata in a block
+    if (i == 0 && j == 0) {
+        *gpu_res = 0;
+    }
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0) {
+        resdata[tid_x][tid_y] = rloc;
+    } 
+    else {
+        resdata[tid_x][tid_y] = 0.;
+    }
+    __syncthreads();
+
+    // Reduction by first reducing along x dimesion and then y dimension. 
+    // Finally resdata[0][0] in each block will have sum of that block
+    for (int s = blockDim.x / 2; s > 0; s /= 2) {
+        if (tid_x < s) {
+            resdata[tid_x][tid_y] = resdata[tid_x][tid_y] + resdata[tid_x + s][tid_y];
+        }
+        __syncthreads();
+    }
+
+    for (int r = blockDim.y / 2; r > 0; r /= 2) {
+        if (tid_y < r) {
+            resdata[0][tid_y] = resdata[0][tid_y] + resdata[0][tid_y + r];
+        }
+        __syncthreads();
+    }
+
+    //Adding resdata[0][0] among all blocks
+    if (tid_x == 0 && tid_y == 0) {
+        atomicAdd(gpu_res, resdata[0][0]);
+        *gpu_res = *gpu_res / *gpu_fluid_cells_size;
+        *gpu_res = sqrt(*gpu_res);
+    }
 }
 
 __global__ void calc_rs_kernel(dtype *gpu_RS, dtype *gpu_F, dtype *gpu_G,dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_dt, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
@@ -565,7 +617,7 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(gpu_F, field.f_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_G, field.g_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_RS, field.rs_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
-    cudaMemset(d_mutex, 0, sizeof(float));
+    cudaMemset(d_mutex, 0, sizeof(int));
 
     dtype var = grid.dx();
     cpu_dx = var;
@@ -610,6 +662,7 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
 
     cudaMemcpy(gpu_size_x, &grid_size_x, sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_size_y, &grid_size_y, sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(gpu_fluid_cells_size, &grid_fluid_cells_size, sizeof(int), cudaMemcpyHostToDevice);
 
     int var1 = GEOMETRY_PGM::moving_wall_id;
     cudaMemcpy(gpu_moving_wall_id, &(var1), sizeof(int), cudaMemcpyHostToDevice);
@@ -635,7 +688,8 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(gpu_wall_velocity, &var, sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_UIN, &UIN, sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_VIN, &VIN, sizeof(dtype), cudaMemcpyHostToDevice);
-    cudaMemcpy(gpu_POUT, &(GEOMETRY_PGM::POUT), sizeof(dtype), cudaMemcpyHostToDevice);
+    var = GEOMETRY_PGM::POUT;
+    cudaMemcpy(gpu_POUT, &var, sizeof(dtype), cudaMemcpyHostToDevice);
 }
 
 void CUDA_solver::apply_boundary() {
@@ -656,26 +710,24 @@ void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt
 
     dtype res = 0.;
     int iter = 0;
+    num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
 
     do{
-
         apply_boundary();
-
-        solve_pressure<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_res, gpu_rloc, gpu_val, gpu_size_x, gpu_size_y, gpu_fluid_cells_size, gpu_geometry_data);
-        cudaMemcpy((void *)res, gpu_res, sizeof(dtype), cudaMemcpyDeviceToHost);
-
-//        res = std::sqrt(res);
-
+        solve_pressure_red_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
+        solve_pressure_black_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
+        calc_res_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_res, gpu_size_x, gpu_size_y, gpu_fluid_cells_size, gpu_geometry_data);
+        cudaMemcpy((void *)&res, gpu_res, sizeof(dtype), cudaMemcpyDeviceToHost);
         iter++;
-        }while(res > tolerance && iter < max_iter);
+    }while(res > tolerance && iter < max_iter);
 
-        if (iter == max_iter) {
-            std::cout << "Max iteration reached at " << t<<" s \n";
-        }
+    if (iter == max_iter) {
+        std::cout << "Max iteration reached at " << t<<" s \n";
+    }
 
-        std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
-        
-        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+    std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
+    
+    " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
 
 }
 
