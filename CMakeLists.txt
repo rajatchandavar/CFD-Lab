@@ -1,6 +1,7 @@
 # Definition of the minimum required cmake Version
 cmake_minimum_required(VERSION 3.0)
 # Definition of the Project
+set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 # Later you can access the project variable like ${CFDLAB_SOURCE_DIR}
 project(CFDLAB VERSION 1.0)
 
@@ -12,7 +13,8 @@ add_compile_options(-g)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-set(CMAKE_CUDA_ARCHITECTURES 86)
+#set(CMAKE_CUDA_ARCHITECTURES 86)
+set(CUDA_COMPILE_FLAGS "-arch=sm_86")
 enable_language(CUDA)
 
 # Creating the executable of our project and the required dependencies

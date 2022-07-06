@@ -8,7 +8,7 @@
 
 namespace LidDrivenCavity {
 const int moving_wall_id = 8;
-const int fixed_wall_id = 4;
+const int fixed_wall_id = 3;
 const dtype wall_velocity = 1.0;
 } 
 
