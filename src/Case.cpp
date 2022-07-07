@@ -237,12 +237,12 @@ void Case::simulate() {
     double output_counter = _output_freq;
     double res; //Residual for Pressure SOR
     int iter, n = 0;
-    float progress = 0.0;
-    int barWidth = 70;
+    // float progress = 0.0;
+    // int barWidth = 70;
 
     output_vtk(timestep); // write the zeroth timestep
 
-    while(t < _t_end && progress < 1){
+    while(t < _t_end){
         
         dt = _field.calculate_dt(_grid);
         t = t + dt;
@@ -275,9 +275,9 @@ void Case::simulate() {
             std::cout << "Max iteration reached at " << t<<" s \n";
         }
 
-        // std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
+        std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
         
-        // " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+        " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
 
         _field.calculate_velocities(_grid);
 
@@ -287,21 +287,21 @@ void Case::simulate() {
             output_counter += _output_freq;
         }
 
-        progress =  t/_t_end; // for demonstration only
-        std::cout << "[";
-        int pos = barWidth * progress;
-        for (int i = 0; i < barWidth; ++i) {
-            if (i < pos) 
-                std::cout << "=";
-            else if (i == pos) 
-                std::cout << ">";
-            else 
-                std::cout << " ";
-        }
-        std::cout << "] " << int(progress * 100.0) << " %\r";
-        // << " Residual = "<< std::setw(12) << res << 
+        // progress =  t/_t_end; // for demonstration only
+        // std::cout << "[";
+        // int pos = barWidth * progress;
+        // for (int i = 0; i < barWidth; ++i) {
+        //     if (i < pos) 
+        //         std::cout << "=";
+        //     else if (i == pos) 
+        //         std::cout << ">";
+        //     else 
+        //         std::cout << " ";
+        // }
+        // std::cout << "] " << int(progress * 100.0) << " %\r";
+        // // << " Residual = "<< std::setw(12) << res << 
         
-        std::cout.flush();
+        // std::cout.flush();
 
     }
     std::cout<<"\n";
