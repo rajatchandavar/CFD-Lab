@@ -266,10 +266,12 @@ void Case::simulate() {
         }
 
         // // Original Implementation
+        // dt = _field.calculate_dt(_grid);
+        // t = t + dt;
+        // ++timestep;
         // for (int i = 0; i < _boundaries.size(); i++) {
         //     _boundaries[i]->apply(_field);
         // }
-        // dt = _field.calculate_dt(_grid);
         // _field.calculate_temperatures(_grid);
         // _field.calculate_fluxes(_grid);
         // _field.calculate_rs(_grid);
