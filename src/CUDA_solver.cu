@@ -497,7 +497,7 @@ __global__ void max_abs_element_kernel(dtype *array, int *gpu_size_x, int *gpu_s
 	unsigned int stride = gridDim.x*blockDim.x;
 	unsigned int offset = 0;
 
-	__shared__ float cache[BLOCK_SIZE]; //block size
+	__shared__ dtype cache[BLOCK_SIZE]; //block size
 	dtype temp = 0;
 	while(index + offset < (*gpu_size_x)*(*gpu_size_y)){
 		temp = fmaxf(temp, fabsf(array[index + offset]));

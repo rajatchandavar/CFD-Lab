@@ -9,7 +9,6 @@ vtk
 *.DS_STORE
 CMakeFiles
 Makefile
-CMakeLists.txt
 doxygen_doc
 compile_commands.json
 .clangd

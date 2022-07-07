@@ -13,7 +13,7 @@ add_compile_options(-g)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-#set(CMAKE_CUDA_ARCHITECTURES 86)
+set(CMAKE_CUDA_ARCHITECTURES 86)
 set(CUDA_COMPILE_FLAGS "-arch=sm_86")
 enable_language(CUDA)
 
