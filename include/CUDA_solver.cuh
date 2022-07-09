@@ -6,6 +6,11 @@
 #include "Enums.hpp"
 #include "Discretization.hpp"
 #include "Boundary.hpp"
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/device_ptr.h>
+#include <thrust/functional.h>
+
 
 #define BLOCK_SIZE 128
 #define BLOCK_SIZE_X 32

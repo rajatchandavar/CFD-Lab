@@ -759,17 +759,38 @@ dtype CUDA_solver::calc_dt() {
     num_blocks = get_num_blocks(grid_size);
     dtype t[4];
     dtype result;
-    max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_U, gpu_size_x, gpu_size_y, d_mutex, gpu_umax);
-    max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_V, gpu_size_x, gpu_size_y, d_mutex, gpu_vmax);
 
-    cudaMemcpy((void *)&cpu_umax, gpu_umax, sizeof(dtype), cudaMemcpyDeviceToHost);
-    cudaMemcpy((void *)&cpu_vmax, gpu_vmax, sizeof(dtype), cudaMemcpyDeviceToHost);
+    // Typecasting raw pointer to thrust device pointer
+    thrust::device_ptr<dtype> thrust_U = thrust::device_pointer_cast(gpu_U);
+    thrust::device_ptr<dtype> thrust_V = thrust::device_pointer_cast(gpu_V);
 
+    // Finding max and min element in U and V
+    thrust::device_ptr<dtype> thrust_U_max = thrust::max_element(thrust_U, thrust_U + grid_size);
+    thrust::device_ptr<dtype> thrust_U_min = thrust::min_element(thrust_U, thrust_U + grid_size);
+    thrust::device_ptr<dtype> thrust_V_max = thrust::max_element(thrust_V, thrust_V + grid_size);
+    thrust::device_ptr<dtype> thrust_V_min = thrust::min_element(thrust_V, thrust_V + grid_size);
+
+    // Finding Maximum between max element and -(min element) as Abs max needed.
+    thrust::maximum<dtype> get_max;
+    dtype umax = get_max(*thrust_U_max, -(*thrust_U_min));
+    dtype vmax = get_max(*thrust_V_max, -(*thrust_V_min));
+    
     t[0] = 1 / (2 * (cpu_nu) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
-    t[1] = (cpu_dx) / (cpu_umax);
-    t[2] = (cpu_dy) / (cpu_vmax);   
+    t[1] = (cpu_dx) / (umax);
+    t[2] = (cpu_dy) / (vmax);   
     t[3] = 1 / (2 * (cpu_alpha) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
     dtype temp_dt =t[0];
+
+    // Previous implementation
+    // max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_U, gpu_size_x, gpu_size_y, d_mutex, gpu_umax);
+    // max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_V, gpu_size_x, gpu_size_y, d_mutex, gpu_vmax);
+    // cudaMemcpy((void *)&cpu_umax, gpu_umax, sizeof(dtype), cudaMemcpyDeviceToHost);
+    // cudaMemcpy((void *)&cpu_vmax, gpu_vmax, sizeof(dtype), cudaMemcpyDeviceToHost);
+    // t[0] = 1 / (2 * (cpu_nu) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
+    // t[1] = (cpu_dx) / (cpu_umax);
+    // t[2] = (cpu_dy) / (cpu_vmax);   
+    // t[3] = 1 / (2 * (cpu_alpha) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
+    // dtype temp_dt =t[0];
 
     for(int i=1; i<4; i++)
     {
@@ -780,10 +801,6 @@ dtype CUDA_solver::calc_dt() {
     result = (cpu_tau) * temp_dt;
     cudaMemcpy(gpu_dt, &result, sizeof(dtype), cudaMemcpyHostToDevice);
     return result;
-    // *gpu_dt = result;
-    
-    // calc_dt_kernel<<<1,1>>>(gpu_numblocks, gpu_blocksize, gpu_U,gpu_V, gpu_umax, gpu_vmax, gpu_size_x, gpu_size_y,gpu_dx, gpu_dy,d_mutex,gpu_nu, gpu_alpha, gpu_tau, gpu_dt);
-    // cudaMemcpy((void *)&dt, gpu_dt, sizeof(dtype), cudaMemcpyDeviceToHost);
 
 }
 
