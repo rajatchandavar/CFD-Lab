@@ -103,7 +103,7 @@ int *gpu_cold_id, dtype *gpu_wall_temp_a, dtype *gpu_wall_temp_h, dtype *gpu_wal
         // obstacles B_NE (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the North and East directions 
 
-        if(check_bound_north(j) && check_bound_east(i) && at(gpu_geometry_data,i,j+1)==0 && at(gpu_geometry_data,i+1,j)==0) {
+        if(check_bound_north(j) && check_bound_east(i) && at(gpu_geometry_data,i,j+1)==*gpu_fluid_id && at(gpu_geometry_data,i+1,j)==*gpu_fluid_id) {
             at(gpu_U, i, j) = 0.0;
             at(gpu_U, i - 1, j) = -at(gpu_U, i - 1, j + 1);
             at(gpu_V, i, j) = 0.0;
@@ -123,7 +123,7 @@ int *gpu_cold_id, dtype *gpu_wall_temp_a, dtype *gpu_wall_temp_h, dtype *gpu_wal
         // obstacles B_SE (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the South and East directions 
 
-        else if(check_bound_south(j) && check_bound_east(i) && at(gpu_geometry_data,i,j-1)==0 && at(gpu_geometry_data,i+1,j)==0) {
+        else if(check_bound_south(j) && check_bound_east(i) && at(gpu_geometry_data,i,j-1)==*gpu_fluid_id&& at(gpu_geometry_data,i+1,j)==*gpu_fluid_id) {
 
             at(gpu_U, i, j) = 0.0;
             at(gpu_U, i - 1, j) = -at(gpu_U, i - 1, j - 1);
@@ -145,7 +145,7 @@ int *gpu_cold_id, dtype *gpu_wall_temp_a, dtype *gpu_wall_temp_h, dtype *gpu_wal
         // obstacle B_NW (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the North and West directions 
             
-        else if(check_bound_north(j) && check_bound_west(i) && at(gpu_geometry_data,i,j+1)==0 && at(gpu_geometry_data,i-1,j)==0) {
+        else if(check_bound_north(j) && check_bound_west(i) && at(gpu_geometry_data,i,j+1)==*gpu_fluid_id && at(gpu_geometry_data,i-1,j)==*gpu_fluid_id) {
 
             at(gpu_U,i - 1, j) = 0.0;
             at(gpu_U,i, j) = -at(gpu_U,i, j + 1);
@@ -167,7 +167,7 @@ int *gpu_cold_id, dtype *gpu_wall_temp_a, dtype *gpu_wall_temp_h, dtype *gpu_wal
         // obstacle B_SW (Corner Cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the South and West directions 
 
-        else if(check_bound_south(j) && check_bound_west(i) && at(gpu_geometry_data,i,j-1)==0 && at(gpu_geometry_data,i-1,j)==0){
+        else if(check_bound_south(j) && check_bound_west(i) && at(gpu_geometry_data,i,j-1)==*gpu_fluid_id&& at(gpu_geometry_data,i-1,j)==*gpu_fluid_id){
             at(gpu_U,i - 1, j) = 0.0;
             at(gpu_U,i, j) = at(gpu_U,i, j - 1);
             at(gpu_V,i, j - 1) = 0.0;
@@ -188,7 +188,7 @@ int *gpu_cold_id, dtype *gpu_wall_temp_a, dtype *gpu_wall_temp_h, dtype *gpu_wal
         // Bottom Wall B_N (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the North direction
 
-        else if(check_bound_north(j) && at(gpu_geometry_data,i,j+1)==0){
+        else if(check_bound_north(j) && at(gpu_geometry_data,i,j+1)==*gpu_fluid_id){
             at(gpu_U,i, j) = -at(gpu_U,i, j + 1);
             at(gpu_V,i, j) = 0.0;
             at(gpu_P,i, j) = at(gpu_P,i, j + 1);
@@ -206,7 +206,7 @@ int *gpu_cold_id, dtype *gpu_wall_temp_a, dtype *gpu_wall_temp_h, dtype *gpu_wal
         // Top Wall B_S (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the South direction
 
-        else if(check_bound_south(j) && at(gpu_geometry_data,i,j-1)==0){
+        else if(check_bound_south(j) && at(gpu_geometry_data,i,j-1)==*gpu_fluid_id){
 
             at(gpu_U,i, j) = -at(gpu_U,i, j - 1);
             at(gpu_V,i, j) = 0.0;
@@ -225,7 +225,7 @@ int *gpu_cold_id, dtype *gpu_wall_temp_a, dtype *gpu_wall_temp_h, dtype *gpu_wal
         // Left Wall B_E (edge cell) - This section applies the appropriate boundary conditions to a fixed wall with fluid cells on 
         // the East direction
 
-        else if(check_bound_east(i) && at(gpu_geometry_data,i+1,j)==0){
+        else if(check_bound_east(i) && at(gpu_geometry_data,i+1,j)==*gpu_fluid_id){
             at(gpu_U,i, j) = 0.0;
             at(gpu_V,i, j) = -at(gpu_V,i + 1, j);
             at(gpu_P,i, j) = at(gpu_P,i + 1, j);
@@ -263,10 +263,10 @@ int *gpu_cold_id, dtype *gpu_wall_temp_a, dtype *gpu_wall_temp_h, dtype *gpu_wal
     }
 }
 
-__global__ void MovingWallBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_wall_velocity, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
+__global__ void MovingWallBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, int *gpu_moving_wall_id, dtype *gpu_wall_velocity, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 8 && check_bound_south(j)) {       
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_moving_wall_id && check_bound_south(j)) {       
         at(gpu_U,i, j) = 2*(*gpu_wall_velocity)- at(gpu_U,i, j-1);
         //Since v grid is staggered, the v velocity of cells to below of ghost layer should be set to 0.
         at(gpu_V,i,j - 1) = 0.0;
@@ -274,41 +274,41 @@ __global__ void MovingWallBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dty
     }
 }
 
-__global__ void InFlowBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_UIN, dtype *gpu_VIN, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
+__global__ void InFlowBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, int *gpu_inflow_id, dtype *gpu_UIN, dtype *gpu_VIN, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (check_bound_east(i) && i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 1) {
+    if (check_bound_east(i) && i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_inflow_id) {
         at(gpu_U,i,j) = (*gpu_UIN);
         at(gpu_V,i,j) = 2*(*gpu_VIN) - at(gpu_V,i + 1, j);
         at(gpu_P,i,j) = at(gpu_P,i + 1, j);
     }
 }
 
-__global__ void OutFlowBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_POUT, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
+__global__ void OutFlowBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, int *gpu_outflow_id, dtype *gpu_POUT, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (check_bound_west(i) && i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 2) {
+    if (check_bound_west(i) && i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_outflow_id) {
             at(gpu_U,i,j) = at(gpu_U,i - 1,j);
             at(gpu_V,i,j) = at(gpu_V,i - 1,j);
             at(gpu_P,i,j) = 2*(*gpu_POUT) - at(gpu_P,i - 1, j);
     }
 }
 
-__global__ void calc_T_kernel(dtype *gpu_T, dtype *gpu_T_temp, dtype *gpu_U, dtype *gpu_V, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_dt,
+__global__ void calc_T_kernel(dtype *gpu_T, dtype *gpu_T_temp, dtype *gpu_U, dtype *gpu_V, int *gpu_fluid_id, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_dt,
                               dtype *gpu_alpha, dtype *gpu_gamma, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     //NEED TO DO THIS ONLY FOR FLUID CELLS
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0)
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id)
         at(gpu_T, i, j) = (*gpu_dt) * (*gpu_alpha * diffusion(gpu_T_temp, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - convection_Tu(gpu_T_temp, gpu_U, i, j, *gpu_dx, *gpu_dy, *gpu_gamma, gpu_size_x) - convection_Tv(gpu_T_temp, gpu_V, i, j, *gpu_dx, *gpu_dy, *gpu_gamma, gpu_size_x)) + at(gpu_T_temp, i, j);
 }
 
-__global__ void calc_fluxes_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, dtype *gpu_T, int *gpu_geometry_data, dtype *gpu_gx, dtype *gpu_gy, dtype *gpu_dx, dtype *gpu_dy, int *gpu_size_x, int *gpu_size_y, dtype *gpu_gamma, dtype *gpu_beta,
+__global__ void calc_fluxes_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, dtype *gpu_T, int *gpu_fluid_id, int *gpu_geometry_data, dtype *gpu_gx, dtype *gpu_gy, dtype *gpu_dx, dtype *gpu_dy, int *gpu_size_x, int *gpu_size_y, dtype *gpu_gamma, dtype *gpu_beta,
                              dtype *gpu_nu, dtype *gpu_dt, bool *gpu_isHeatTransfer) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data,i,j) == 0){
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data,i,j) == *gpu_fluid_id){
 
         at(gpu_F, i, j) = at(gpu_U, i, j) + (*gpu_dt) * ((*gpu_nu) * diffusion(gpu_U, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - convection_u(gpu_U, gpu_V, *gpu_gamma, i, j, *gpu_dx, *gpu_dy, gpu_size_x) + (*gpu_gx));
         at(gpu_G, i, j) = at(gpu_V, i, j) + (*gpu_dt) * ((*gpu_nu) * diffusion(gpu_V, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - convection_v(gpu_U, gpu_V, *gpu_gamma, i, j, *gpu_dx, *gpu_dy, gpu_size_x) + (*gpu_gy));
@@ -321,98 +321,98 @@ __global__ void calc_fluxes_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dty
     }
 }
 
-__global__ void fluxes_bc_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, int *gpu_geometry_data, int *gpu_size_x, int *gpu_size_y) {
+__global__ void fluxes_bc_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, int *gpu_fluid_id, int *gpu_fixed_wall_id, int *gpu_adiabatic_id, int *gpu_hot_id, int *gpu_cold_id, int *gpu_moving_wall_id, int *gpu_inflow_id, int *gpu_outflow_id, int *gpu_geometry_data, int *gpu_size_x, int *gpu_size_y) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (i < *gpu_size_x && j < *gpu_size_y){
 
-        if (at(gpu_geometry_data, i, j) == 3 || at(gpu_geometry_data, i, j) == 5 || at(gpu_geometry_data, i, j) == 6 || at(gpu_geometry_data, i, j) == 7) {
+        if (at(gpu_geometry_data, i, j) == *gpu_fixed_wall_id || at(gpu_geometry_data, i, j) == *gpu_adiabatic_id || at(gpu_geometry_data, i, j) == *gpu_hot_id || at(gpu_geometry_data, i, j) == *gpu_cold_id) {
             // B_NE fixed wall corner cell with fluid cells on the North and East directions
 
-            if (check_bound_north(j) && check_bound_east(i) && at(gpu_geometry_data, i, j + 1) == 0 && at(gpu_geometry_data, i + 1, j) == 0) {
+            if (check_bound_north(j) && check_bound_east(i) && at(gpu_geometry_data, i, j + 1) == *gpu_fluid_id && at(gpu_geometry_data, i + 1, j) == *gpu_fluid_id) {
                 at(gpu_F, i, j) = at(gpu_U, i, j);
                 at(gpu_G, i, j) = at(gpu_V, i, j);
             }
 
             // B_SE fixed wall corner cell with fluid cells on the South and East directions
 
-            else if (check_bound_south(j) && check_bound_east(i) && at(gpu_geometry_data, i, j - 1) == 0 && at(gpu_geometry_data, i + 1, j) == 0) {
+            else if (check_bound_south(j) && check_bound_east(i) && at(gpu_geometry_data, i, j - 1) == *gpu_fluid_id && at(gpu_geometry_data, i + 1, j) == *gpu_fluid_id) {
                 at(gpu_F, i, j) = at(gpu_U, i, j);
                 at(gpu_G, i, j - 1) = at(gpu_V, i, j - 1);
             }
 
             // B_NW fixed wall corner cell with fluid cells on the North and West directions
 
-            else if (check_bound_north(j) && check_bound_west(i) && at(gpu_geometry_data, i, j + 1) == 0 && at(gpu_geometry_data, i - 1, j) == 0) {
+            else if (check_bound_north(j) && check_bound_west(i) && at(gpu_geometry_data, i, j + 1) == *gpu_fluid_id && at(gpu_geometry_data, i - 1, j) == *gpu_fluid_id) {
                 at(gpu_F, i - 1, j) = at(gpu_U, i - 1, j);
                 at(gpu_G, i, j) = at(gpu_V, i, j);
             }
 
             // B_SW fixed wall corner cell with fluid cells on the South and West directions
 
-            else if (check_bound_south(j) && check_bound_west(i) && at(gpu_geometry_data, i, j - 1) == 0 && at(gpu_geometry_data, i - 1, j) == 0) {
+            else if (check_bound_south(j) && check_bound_west(i) && at(gpu_geometry_data, i, j - 1) == *gpu_fluid_id && at(gpu_geometry_data, i - 1, j) == *gpu_fluid_id) {
                 at(gpu_F, i - 1, j) = at(gpu_U, i - 1, j);
                 at(gpu_G, i, j - 1) = at(gpu_V, i, j - 1);
             } 
-            else if (check_bound_north(j) && at(gpu_geometry_data, i, j + 1) == 0)
+            else if (check_bound_north(j) && at(gpu_geometry_data, i, j + 1) == *gpu_fluid_id)
                 at(gpu_G, i, j) = at(gpu_V, i, j);
 
-            else if (check_bound_south(j) && at(gpu_geometry_data, i, j - 1) == 0)
+            else if (check_bound_south(j) && at(gpu_geometry_data, i, j - 1) == *gpu_fluid_id)
                 at(gpu_G,i,j - 1) = at(gpu_V,i,j - 1);
 
-            else if (check_bound_west(i) && at(gpu_geometry_data, i - 1, j) == 0)
+            else if (check_bound_west(i) && at(gpu_geometry_data, i - 1, j) == *gpu_fluid_id)
                 at(gpu_F, i - 1, j) = at(gpu_U, i - 1, j);
 
-            else if (check_bound_east(i) && at(gpu_geometry_data, i + 1, j) == 0)
+            else if (check_bound_east(i) && at(gpu_geometry_data, i + 1, j) == *gpu_fluid_id)
                 at(gpu_F, i, j) = at(gpu_U, i, j);
 
         }
 
-        else if (at(gpu_geometry_data, i, j) == 8) {
+        else if (at(gpu_geometry_data, i, j) == *gpu_moving_wall_id) {
             at(gpu_G, i, j - 1) = at(gpu_V, i, j - 1);
         } 
         
-        else if (at(gpu_geometry_data, i, j) == 1) {
+        else if (at(gpu_geometry_data, i, j) == *gpu_inflow_id) {
             at(gpu_F, i, j) = at(gpu_U, i, j);
         }
 
-        else if (at(gpu_geometry_data, i, j) == 2) {
+        else if (at(gpu_geometry_data, i, j) == *gpu_outflow_id) {
 
             at(gpu_F, i - 1, j) = at(gpu_U, i - 1, j);
         }
     }
 }
 
-__global__ void solve_pressure_red_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
+__global__ void solve_pressure_red_kernel(dtype *gpu_RS, dtype *gpu_P, int *gpu_fluid_id, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
 *gpu_coeff, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
     *gpu_coeff = *gpu_omega / (2.0 * (1.0 / (*gpu_dx * *gpu_dx) + 1.0 / (*gpu_dy * *gpu_dy)));
 
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0 && (i + j)%2 != 0){
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id && (i + j)%2 != 0){
         at(gpu_P,i, j) = (1.0 - *gpu_omega) * at(gpu_P,i, j) +
                         (*gpu_coeff) * (sor_helper(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j));
     }
 
 }
 
-__global__ void solve_pressure_black_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
+__global__ void solve_pressure_black_kernel(dtype *gpu_RS, dtype *gpu_P, int *gpu_fluid_id, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
 *gpu_coeff, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
     *gpu_coeff = *gpu_omega / (2.0 * (1.0 / (*gpu_dx * *gpu_dx) + 1.0 / (*gpu_dy * *gpu_dy)));
 
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0 && (i + j)%2 == 0){
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id && (i + j)%2 == 0){
         at(gpu_P,i, j) = (1.0 - *gpu_omega) * at(gpu_P,i, j) +
                         (*gpu_coeff) * (sor_helper(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j));
     }
 
 }
 
-__global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_res, int *gpu_size_x, int *gpu_size_y, int *gpu_fluid_cells_size, int *gpu_geometry_data){
+__global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, int *gpu_fluid_id, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_res, int *gpu_size_x, int *gpu_size_y, int *gpu_fluid_cells_size, int *gpu_geometry_data){
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
     int tid_x = threadIdx.x;
@@ -420,7 +420,7 @@ __global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtyp
 
     dtype val, rloc;
 
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0){
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id){
         val = laplacian(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j);
         rloc = (val * val);
     }
@@ -435,7 +435,7 @@ __global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtyp
     if (i == 0 && j == 0) {
         *gpu_res = 0;
     }
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0) {
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id) {
         resdata[tid_x][tid_y] = rloc;
     } 
     else {
@@ -467,24 +467,24 @@ __global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtyp
     }
 }
 
-__global__ void calc_rs_kernel(dtype *gpu_RS, dtype *gpu_F, dtype *gpu_G,dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_dt, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
+__global__ void calc_rs_kernel(dtype *gpu_RS, dtype *gpu_F, dtype *gpu_G, int *gpu_fluid_id, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_dt, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0)
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id)
         at(gpu_RS,i,j) = 1 / (*gpu_dt) * ((at(gpu_F,i, j) - at(gpu_F,i - 1, j)) / (*gpu_dx) + (at(gpu_G,i, j) - at(gpu_G,i, j - 1)) / (*gpu_dy));
 }
 
-__global__ void calc_velocities_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, int *gpu_size_x, int *gpu_size_y, dtype *gpu_dt, int *gpu_geometry_data)
+__global__ void calc_velocities_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, int *gpu_fluid_id, int *gpu_outflow_id, dtype *gpu_dx, dtype *gpu_dy, int *gpu_size_x, int *gpu_size_y, dtype *gpu_dt, int *gpu_geometry_data)
 {   
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
 
-    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == 0)
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id)
     {   
-        if (( at(gpu_geometry_data, i+1, j)== 0) || (at(gpu_geometry_data, i+1, j) == 2)) {
+        if (( at(gpu_geometry_data, i+1, j)== *gpu_fluid_id) || (at(gpu_geometry_data, i+1, j) == *gpu_outflow_id)) {
             at(gpu_U,i, j) = at(gpu_F,i, j) - ((*gpu_dt)/(*gpu_dx)) * (at(gpu_P,i + 1, j) - at(gpu_P,i, j));           
         }
-        if ((at(gpu_geometry_data, i, j+1)==0) || (at(gpu_geometry_data, i, j+1)==2)) {
+        if ((at(gpu_geometry_data, i, j+1)==*gpu_fluid_id) || (at(gpu_geometry_data, i, j+1)==*gpu_outflow_id)) {
             at(gpu_V,i, j) = at(gpu_G,i, j) - ((*gpu_dt)/(*gpu_dy)) * (at(gpu_P,i, j + 1) - at(gpu_P,i, j));
         }
     }
@@ -698,11 +698,11 @@ void CUDA_solver::apply_boundary() {
 
     FixedWallBoundary<<<num_blocks_2d, block_size_2d>>>(gpu_U, gpu_V, gpu_P, gpu_T, gpu_geometry_data, gpu_fluid_id, gpu_moving_wall_id, gpu_fixed_wall_id, gpu_inflow_id, gpu_outflow_id, gpu_adiabatic_id, gpu_hot_id, gpu_cold_id, gpu_wall_temp_a, gpu_wall_temp_h, gpu_wall_temp_c, gpu_isHeatTransfer, gpu_size_x, gpu_size_y);
 
-    MovingWallBoundary<<<num_blocks_2d, block_size_2d>>>(gpu_U, gpu_V, gpu_P, gpu_wall_velocity, gpu_size_x, gpu_size_y, gpu_geometry_data);
+    MovingWallBoundary<<<num_blocks_2d, block_size_2d>>>(gpu_U, gpu_V, gpu_P, gpu_moving_wall_id, gpu_wall_velocity, gpu_size_x, gpu_size_y, gpu_geometry_data);
 
-    InFlowBoundary<<<num_blocks_2d, block_size_2d>>>(gpu_U, gpu_V, gpu_P, gpu_UIN, gpu_VIN, gpu_size_x, gpu_size_y, gpu_geometry_data);
+    InFlowBoundary<<<num_blocks_2d, block_size_2d>>>(gpu_U, gpu_V, gpu_P, gpu_inflow_id, gpu_UIN, gpu_VIN, gpu_size_x, gpu_size_y, gpu_geometry_data);
 
-    OutFlowBoundary<<<num_blocks_2d, block_size_2d>>>(gpu_U, gpu_V, gpu_P, gpu_POUT, gpu_size_x, gpu_size_y, gpu_geometry_data);
+    OutFlowBoundary<<<num_blocks_2d, block_size_2d>>>(gpu_U, gpu_V, gpu_P, gpu_outflow_id, gpu_POUT, gpu_size_x, gpu_size_y, gpu_geometry_data);
 
 }
 
@@ -714,9 +714,9 @@ void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt
 
     do{
         apply_boundary();
-        solve_pressure_red_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
-        solve_pressure_black_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
-        calc_res_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_dx, gpu_dy, gpu_res, gpu_size_x, gpu_size_y, gpu_fluid_cells_size, gpu_geometry_data);
+        solve_pressure_red_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_fluid_id,gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
+        solve_pressure_black_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P,gpu_fluid_id, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
+        calc_res_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_fluid_id, gpu_dx, gpu_dy, gpu_res, gpu_size_x, gpu_size_y, gpu_fluid_cells_size, gpu_geometry_data);
         cudaMemcpy((void *)&res, gpu_res, sizeof(dtype), cudaMemcpyDeviceToHost);
         iter++;
     }while(res > tolerance && iter < max_iter);
@@ -734,23 +734,23 @@ void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt
 void CUDA_solver::calc_T() {
     cudaMemcpy(gpu_T_temp, gpu_T, grid_size * sizeof(dtype), cudaMemcpyDeviceToDevice);
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
-    calc_T_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_T, gpu_T_temp, gpu_U, gpu_V, gpu_dx, gpu_dy, gpu_dt, gpu_alpha, gpu_gamma, gpu_size_x, gpu_size_y, gpu_geometry_data);
+    calc_T_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_T, gpu_T_temp, gpu_U, gpu_V, gpu_fluid_id, gpu_dx, gpu_dy, gpu_dt, gpu_alpha, gpu_gamma, gpu_size_x, gpu_size_y, gpu_geometry_data);
 }
 
 void CUDA_solver::calc_fluxes() {
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
-    calc_fluxes_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F,gpu_G,gpu_U,gpu_V,gpu_T,gpu_geometry_data,gpu_gx,gpu_gy,gpu_dx,gpu_dy,gpu_size_x, gpu_size_y, gpu_gamma, gpu_beta, gpu_nu, gpu_dt, gpu_isHeatTransfer);
-    fluxes_bc_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F,gpu_G,gpu_U,gpu_V,gpu_geometry_data,gpu_size_x, gpu_size_y);
+    calc_fluxes_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F,gpu_G,gpu_U,gpu_V,gpu_T, gpu_fluid_id, gpu_geometry_data,gpu_gx,gpu_gy,gpu_dx,gpu_dy,gpu_size_x, gpu_size_y, gpu_gamma, gpu_beta, gpu_nu, gpu_dt, gpu_isHeatTransfer);
+    fluxes_bc_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F,gpu_G,gpu_U,gpu_V, gpu_fluid_id, gpu_fixed_wall_id, gpu_adiabatic_id, gpu_hot_id, gpu_cold_id, gpu_moving_wall_id, gpu_inflow_id, gpu_outflow_id, gpu_geometry_data,gpu_size_x, gpu_size_y);
 }
 
 void CUDA_solver::calc_rs() {
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
-    calc_rs_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_F,gpu_G, gpu_dx,gpu_dy, gpu_dt, gpu_size_x, gpu_size_y, gpu_geometry_data);
+    calc_rs_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_F,gpu_G, gpu_fluid_id, gpu_dx,gpu_dy, gpu_dt, gpu_size_x, gpu_size_y, gpu_geometry_data);
 }
 
 void CUDA_solver::calc_velocities() {
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
-    calc_velocities_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F, gpu_G, gpu_U, gpu_V, gpu_P, gpu_dx, gpu_dy, gpu_size_x, gpu_size_y, gpu_dt, gpu_geometry_data);
+    calc_velocities_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_F, gpu_G, gpu_U, gpu_V, gpu_P, gpu_fluid_id, gpu_outflow_id, gpu_dx, gpu_dy, gpu_size_x, gpu_size_y, gpu_dt, gpu_geometry_data);
 
 }
 
@@ -759,38 +759,17 @@ dtype CUDA_solver::calc_dt() {
     num_blocks = get_num_blocks(grid_size);
     dtype t[4];
     dtype result;
+    max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_U, gpu_size_x, gpu_size_y, d_mutex, gpu_umax);
+    max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_V, gpu_size_x, gpu_size_y, d_mutex, gpu_vmax);
 
-    // Typecasting raw pointer to thrust device pointer
-    thrust::device_ptr<dtype> thrust_U = thrust::device_pointer_cast(gpu_U);
-    thrust::device_ptr<dtype> thrust_V = thrust::device_pointer_cast(gpu_V);
+    cudaMemcpy((void *)&cpu_umax, gpu_umax, sizeof(dtype), cudaMemcpyDeviceToHost);
+    cudaMemcpy((void *)&cpu_vmax, gpu_vmax, sizeof(dtype), cudaMemcpyDeviceToHost);
 
-    // Finding max and min element in U and V
-    thrust::device_ptr<dtype> thrust_U_max = thrust::max_element(thrust_U, thrust_U + grid_size);
-    thrust::device_ptr<dtype> thrust_U_min = thrust::min_element(thrust_U, thrust_U + grid_size);
-    thrust::device_ptr<dtype> thrust_V_max = thrust::max_element(thrust_V, thrust_V + grid_size);
-    thrust::device_ptr<dtype> thrust_V_min = thrust::min_element(thrust_V, thrust_V + grid_size);
-
-    // Finding Maximum between max element and -(min element) as Abs max needed.
-    thrust::maximum<dtype> get_max;
-    dtype umax = get_max(*thrust_U_max, -(*thrust_U_min));
-    dtype vmax = get_max(*thrust_V_max, -(*thrust_V_min));
-    
     t[0] = 1 / (2 * (cpu_nu) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
-    t[1] = (cpu_dx) / (umax);
-    t[2] = (cpu_dy) / (vmax);   
+    t[1] = (cpu_dx) / (cpu_umax);
+    t[2] = (cpu_dy) / (cpu_vmax);   
     t[3] = 1 / (2 * (cpu_alpha) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
     dtype temp_dt =t[0];
-
-    // Previous implementation
-    // max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_U, gpu_size_x, gpu_size_y, d_mutex, gpu_umax);
-    // max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_V, gpu_size_x, gpu_size_y, d_mutex, gpu_vmax);
-    // cudaMemcpy((void *)&cpu_umax, gpu_umax, sizeof(dtype), cudaMemcpyDeviceToHost);
-    // cudaMemcpy((void *)&cpu_vmax, gpu_vmax, sizeof(dtype), cudaMemcpyDeviceToHost);
-    // t[0] = 1 / (2 * (cpu_nu) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
-    // t[1] = (cpu_dx) / (cpu_umax);
-    // t[2] = (cpu_dy) / (cpu_vmax);   
-    // t[3] = 1 / (2 * (cpu_alpha) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
-    // dtype temp_dt =t[0];
 
     for(int i=1; i<4; i++)
     {
@@ -801,6 +780,10 @@ dtype CUDA_solver::calc_dt() {
     result = (cpu_tau) * temp_dt;
     cudaMemcpy(gpu_dt, &result, sizeof(dtype), cudaMemcpyHostToDevice);
     return result;
+    // *gpu_dt = result;
+    
+    // calc_dt_kernel<<<1,1>>>(gpu_numblocks, gpu_blocksize, gpu_U,gpu_V, gpu_umax, gpu_vmax, gpu_size_x, gpu_size_y,gpu_dx, gpu_dy,d_mutex,gpu_nu, gpu_alpha, gpu_tau, gpu_dt);
+    // cudaMemcpy((void *)&dt, gpu_dt, sizeof(dtype), cudaMemcpyDeviceToHost);
 
 }
 
