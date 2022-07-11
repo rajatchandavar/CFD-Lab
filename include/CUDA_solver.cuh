@@ -1,15 +1,22 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
+
 #include "Fields.hpp"
 #include "Grid.hpp"
 #include "Enums.hpp"
 #include "Discretization.hpp"
 #include "Boundary.hpp"
+
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/device_ptr.h>
 #include <thrust/functional.h>
+
+#include <cublas.h>
+#include <cusolver_common.h>
+#include <cusolverSp.h>
+#include <cusparse.h>
 
 
 #define BLOCK_SIZE 128
@@ -27,6 +34,14 @@ class CUDA_solver{
     dtype *gpu_F;
     dtype *gpu_G;
     dtype *gpu_RS;
+
+    double *gpu_csrValA;
+
+    int *gpu_csrColIndA;
+    int *gpu_csrRowPtrA;
+
+    int *gpu_nnzA;
+    int *gpu_n;
 
     int *gpu_geometry_data;
 
@@ -79,6 +94,7 @@ class CUDA_solver{
     void calc_fluxes();
     void calc_rs();
     void calc_pressure(int, dtype, dtype, dtype);
+    void solve_pressure(double, int,  int, double, double, int, int);
     void calc_velocities();
     dtype calc_dt();
     dim3 get_num_blocks(int);

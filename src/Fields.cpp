@@ -277,6 +277,12 @@ Matrix<dtype> &Fields::g_matrix() { return _G; }
 
 Matrix<dtype> &Fields::rs_matrix() { return _RS; }
 
+std::vector<double> &Fields::csrValA_matrix() { return csrValA; }
+
+std::vector<int> &Fields::csrRowPtrA_matrix() { return csrRowPtrA; }
+
+std::vector<int> &Fields::csrColIndA_matrix() { return csrColIndA; }
+
 bool Fields::isHeatTransfer() { return _isHeatTransfer;}
 
 dtype* Fields::dt() { return &_dt; }

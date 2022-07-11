@@ -4,12 +4,6 @@
 #include <iomanip> 
 #include <math.h>
 
-#include <cuda.h>
-#include <cublas.h>
-#include <cusolver_common.h>
-#include <cusolverSp.h>
-#include <cusparse.h>
-
 #ifndef __CUDACC__
 #define __CUDACC__
 #endif
@@ -533,15 +527,15 @@ __global__ void max_abs_element_kernel(dtype *array, int *gpu_size_x, int *gpu_s
 	}
 }
 
-void CUDA_solver::solve_pressure(cusparseMatDescr_t descrA, cusolverSpHandle_t handleSolver, cusolverStatus_t result, \
-double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_b, double *gpu_X, int *gpu_n, int *gpu_nnzA) {
-    // cusolverSpHandle_t handleSolver;
+void CUDA_solver::solve_pressure(double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_RS, double *gpu_P, int *gpu_n, int *gpu_nnzA) {
+    
+    cusolverSpHandle_t handleSolver;
     cusolverStatus_t Checker = cusolverSpCreate(&handleSolver);
     
     // const int n = 3;
     // int nnzA = 9;
     
-    // cusparseMatDescr_t descrA = 0;
+    cusparseMatDescr_t descrA = 0;
     descrA = 0;
     cusparseCreateMatDescr(&descrA);
     cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
@@ -554,7 +548,7 @@ double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_b, d
     int valuefor,*singularity = &valuefor;
     *singularity = 0;
 
-    result = cusolverSpDcsrlsvluHost(handleSolver, n, nnzA, descrA, csrValA, csrRowPtrA, csrColIndA, b, tol, reorder, x, singularity);
+    cusolverStatus_t result = cusolverSpDcsrlsvluHost(handleSolver, gpu_n, gpu_nnzA, descrA, gpu_csrValA, gpu_csrRowPtrA, gpu_csrColIndA, gpu_RS, tol, reorder, gpu_P, singularity);
 
     cusolverStatus_t cusolverSpDestroy(cusolverSpHandle_t handleSolver);
 
@@ -588,6 +582,13 @@ void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu
     cudaMalloc((void **)&gpu_F, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_G, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_RS, grid_size * sizeof(dtype));
+
+    cudaMalloc((void **)&gpu_csrValA, grid_size * sizeof(double));
+    cudaMalloc((void **)&gpu_csrColIndA, grid_size * sizeof(int));
+    cudaMalloc((void **)&gpu_csrRowPtrA, grid_size * sizeof(int));
+
+    cudaMalloc((void **)&gpu_nnzA, grid_size * sizeof(int));
+    cudaMalloc((void **)&gpu_n, grid_size * sizeof(int));
 
     cudaMalloc((void **)&gpu_dx, sizeof(dtype));
     cudaMalloc((void **)&gpu_dy, sizeof(dtype));
@@ -646,6 +647,10 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(gpu_U, field.u_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_V, field.v_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_P, field.p_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
+
+    cudaMemcpy(gpu_csrValA, field.csrValA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
+    cudaMemcpy(csrRowPtrA, field.csrRowPtrA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
+    cudaMemcpy(csrColIndA, field.csrColIndA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
 
     cudaMemcpy(gpu_F, field.f_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_G, field.g_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
@@ -711,6 +716,10 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(gpu_cold_id, &(var1), sizeof(int), cudaMemcpyHostToDevice);
     var1 = GEOMETRY_PGM::adiabatic_id;
     cudaMemcpy(gpu_adiabatic_id, &(var1), sizeof(int), cudaMemcpyHostToDevice);
+    var1 = grid.imax() + 2;
+    cudaMemcpy(gpu_n, &(var1), sizeof(int), cudaMemcpyHostToDevice);
+
+    cudaMemcpy(gpu_nnzA, &grid_fluid_cells_size, sizeof(int), cudaMemcpyHostToDevice);
 
     cudaMemcpy(gpu_wall_temp_a, &wall_temp_a, sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_wall_temp_h, &wall_temp_h, sizeof(dtype), cudaMemcpyHostToDevice);
@@ -880,4 +889,9 @@ CUDA_solver::~CUDA_solver() {
     cudaFree(gpu_res);
     cudaFree(gpu_fluid_cells_size);
     cudaFree(d_mutex);
+    cudaFree(gpu_csrValA);
+    cudaFree(gpu_csrColIndA);
+    cudaFree(gpu_csrRowPtrA);
+    cudaFree(gpu_nnzA);
+    cudaFree(gpu_n);
 }

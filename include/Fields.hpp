@@ -115,11 +115,9 @@ class Fields {
 
     Matrix<dtype> &rs_matrix();
 
-    std::vector<dtype> csrValA;
-    std::vector<int> csrRowPtrA;
-    std::vector<int> csrColIndA;
-
-    int nnzA;
+    std::vector<double> &Fields::csrValA_matrix();
+    std::vector<int> &Fields::csrRowPtrA_matrix();
+    std::vector<int> &Fields::csrColIndA_matrix();
 
     /// function to check if heat transfer occurs
     bool isHeatTransfer();
@@ -164,5 +162,11 @@ class Fields {
     dtype _beta;
     /// Check for heat transfer
     bool _isHeatTransfer;
+
+    std::vector<double> csrValA;
+    std::vector<int> csrRowPtrA;
+    std::vector<int> csrColIndA;
+
+    int nnzA;
 
 };
