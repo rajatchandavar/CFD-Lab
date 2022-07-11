@@ -4,6 +4,9 @@
 #include "Discretization.hpp"
 #include "Grid.hpp"
 
+#include <vector>
+
+
 /**
  * @brief Class of container and modifier for the physical fields
  *
@@ -112,6 +115,11 @@ class Fields {
 
     Matrix<dtype> &rs_matrix();
 
+    std::vector<dtype> csrValA;
+    std::vector<int> csrRowPtrA;
+    std::vector<int> csrColIndA;
+
+    int nnzA;
 
     /// function to check if heat transfer occurs
     bool isHeatTransfer();

@@ -4,6 +4,12 @@
 #include <iomanip> 
 #include <math.h>
 
+#include <cuda.h>
+#include <cublas.h>
+#include <cusolver_common.h>
+#include <cusolverSp.h>
+#include <cusparse.h>
+
 #ifndef __CUDACC__
 #define __CUDACC__
 #endif
@@ -525,6 +531,33 @@ __global__ void max_abs_element_kernel(dtype *array, int *gpu_size_x, int *gpu_s
 		*array_max = fmaxf(*array_max, cache[0]);
 		atomicExch(d_mutex, 0);  //unlock
 	}
+}
+
+void CUDA_solver::solve_pressure(cusparseMatDescr_t descrA, cusolverSpHandle_t handleSolver, cusolverStatus_t result, \
+double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_b, double *gpu_X, int *gpu_n, int *gpu_nnzA) {
+    // cusolverSpHandle_t handleSolver;
+    cusolverStatus_t Checker = cusolverSpCreate(&handleSolver);
+    
+    // const int n = 3;
+    // int nnzA = 9;
+    
+    // cusparseMatDescr_t descrA = 0;
+    descrA = 0;
+    cusparseCreateMatDescr(&descrA);
+    cusparseSetMatType(descrA, CUSPARSE_MATRIX_TYPE_GENERAL);
+    cusparseSetMatIndexBase(descrA, CUSPARSE_INDEX_BASE_ZERO);
+    cusparseSetMatDiagType(descrA, CUSPARSE_DIAG_TYPE_NON_UNIT);
+
+    int reorder = 0;
+    double tol = 1e-6;
+    
+    int valuefor,*singularity = &valuefor;
+    *singularity = 0;
+
+    result = cusolverSpDcsrlsvluHost(handleSolver, n, nnzA, descrA, csrValA, csrRowPtrA, csrColIndA, b, tol, reorder, x, singularity);
+
+    cusolverStatus_t cusolverSpDestroy(cusolverSpHandle_t handleSolver);
+
 }
 
 void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu_VIN, dtype cpu_wall_temp_a, dtype cpu_wall_temp_h, dtype cpu_wall_temp_c, dtype cpu_omg) {

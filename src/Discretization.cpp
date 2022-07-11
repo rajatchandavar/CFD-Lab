@@ -57,7 +57,6 @@ dtype Discretization::diffusion(const Matrix<dtype> &A, int i, int j) {
     return result;
 }
 
-
 /*****************************************************************************************
 The following function returns the convection of Temperature in x direction as per 
 the first part of equation (36)
@@ -71,12 +70,10 @@ dtype Discretization::convection_Tu(const Matrix<dtype> &T, const Matrix<dtype> 
     return result;
 }
 
-
 /*****************************************************************************************
 The following function returns the convection of Temperature in y direction as per 
 the second part of equation (36)
 ******************************************************************************************/
-
 
 dtype Discretization::convection_Tv(const Matrix<dtype> &T, const Matrix<dtype> &V, int i, int j)
 {
@@ -85,7 +82,6 @@ dtype Discretization::convection_Tv(const Matrix<dtype> &T, const Matrix<dtype> 
                         _gamma/_dy * ( std::abs(V(i,j)) * (T(i, j) - T(i, j + 1)) / 2 - std::abs(V(i,j - 1)) * (T(i, j - 1) - T(i, j))/2 );
     return result;
 }
-
 
 dtype Discretization::laplacian(const Matrix<dtype> &P, int i, int j) {
     dtype result = (P(i + 1, j) - 2.0 * P(i, j) + P(i - 1, j)) / (_dx * _dx) +
