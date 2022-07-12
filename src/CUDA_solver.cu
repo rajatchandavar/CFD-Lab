@@ -527,8 +527,7 @@ __global__ void max_abs_element_kernel(dtype *array, int *gpu_size_x, int *gpu_s
 	}
 }
 
-void CUDA_solver::solve_pressure(double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_RS, double *gpu_P, int gpu_n, int gpu_nnzA) {
-    
+void CUDA_solver::solve_pressure(double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_RS, double *gpu_P, int n, int nnzA) {
     cusolverSpHandle_t handleSolver;
     cusolverStatus_t Checker = cusolverSpCreate(&handleSolver);
     
@@ -547,8 +546,8 @@ void CUDA_solver::solve_pressure(double *gpu_csrValA, int *gpu_csrRowPtrA,  int 
     
     int valuefor,*singularity = &valuefor;
     *singularity = 0;
-
-    cusolverStatus_t result = cusolverSpDcsrlsvluHost(handleSolver, gpu_n, gpu_nnzA, descrA, gpu_csrValA, gpu_csrRowPtrA, gpu_csrColIndA, gpu_RS, tol, reorder, gpu_P, singularity);
+//std::cout << "I am here3\n";
+    cusolverStatus_t result = cusolverSpDcsrlsvluHost(handleSolver, n, nnzA, descrA, gpu_csrValA, gpu_csrRowPtrA, gpu_csrColIndA, gpu_RS, tol, reorder, gpu_P, singularity);
 
     cusolverStatus_t cusolverSpDestroy(cusolverSpHandle_t handleSolver);
 
@@ -770,6 +769,13 @@ void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt
     std::cout << "Time = " << std::setw(12) << t << " Residual = "<< std::setw(12) << res <<
     
     " Iter = " << std::setw(8) << iter << " dt = " << std::setw(12) << dt << '\n';
+
+}
+
+void CUDA_solver::calc_pressure_cusolver(int n, int nnzA) {
+    apply_boundary();
+    std::cout << "I am here\n";
+    solve_pressure(gpu_csrValA, gpu_csrRowPtrA, gpu_csrColIndA, gpu_RS, gpu_P, n, nnzA);
 
 }
 

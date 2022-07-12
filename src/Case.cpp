@@ -239,6 +239,8 @@ void Case::simulate() {
     dtype output_counter = _output_freq;
     dtype res; //Residual for Pressure SOR
     int iter;
+    int n = _grid.imaxb();
+    int nnzA = _grid.fluid_cells().size();
 
     output_vtk(timestep); // write the zeroth timestep
 
@@ -256,7 +258,8 @@ void Case::simulate() {
         }
         cuda_solver.calc_fluxes();
         cuda_solver.calc_rs();
-        cuda_solver.calc_pressure(_max_iter, _tolerance, t, dt);
+        //cuda_solver.calc_pressure(_max_iter, _tolerance, t, dt);
+        cuda_solver.calc_pressure_cusolver(n, nnzA);
         cuda_solver.calc_velocities();
 
         if(t >= output_counter) {
