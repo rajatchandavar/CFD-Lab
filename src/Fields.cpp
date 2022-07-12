@@ -28,6 +28,10 @@ Fields::Fields(dtype nu, dtype dt, dtype tau, int imax, int jmax, dtype UI, dtyp
     int id = 0;
     csrRowPtrA.push_back(id);
 
+    dtype diagEntry = -2.0/(grid.dx() * grid.dx()) -2/(grid.dy() * grid.dy());
+    dtype lrEntry = 1.0/(grid.dx()*grid.dx());
+    dtype btEntry = 1.0/(grid.dy()*grid.dy());
+
     for (auto currentCell : grid.fluid_cells()){
         int i = currentCell->i();
         int j = currentCell->j();
@@ -35,29 +39,29 @@ Fields::Fields(dtype nu, dtype dt, dtype tau, int imax, int jmax, dtype UI, dtyp
         int idx = j*(imax+2) + i;
 
         if(j-1>= 0) {
-            csrValA.push_back(1.);
+            csrValA.push_back(btEntry);
             csrColIndA.push_back(i+(imax+2)*j-(imax+2));
             id++;
         }
 
         if(i-1>= 0) {
-            csrValA.push_back(1.);
+            csrValA.push_back(lrEntry);
             csrColIndA.push_back(i+(imax+2)*j-1);
             id++;
         }
 
-        csrValA.push_back(2.);
+        csrValA.push_back(diagEntry);
         csrColIndA.push_back(i+(imax+2)*j);
         id++;
 
         if (i+1<imax+2) {
-            csrValA.push_back(1.);
+            csrValA.push_back(lrEntry);
             csrColIndA.push_back(i+(imax+2)*j+1);
             id++;
         }
 
         if(j+1<jmax+2) {
-            csrValA.push_back(1.);
+            csrValA.push_back(btEntry);
             csrColIndA.push_back(i+(imax+2)*j + imax+2);
             id++;
         }
