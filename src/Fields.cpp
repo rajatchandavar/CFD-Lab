@@ -299,3 +299,5 @@ dtype Fields::get_gx() { return _gx;}
 
 dtype Fields::get_gy() { return _gy;}
 
+int Fields::get_nnzA() { return nnzA; }
+

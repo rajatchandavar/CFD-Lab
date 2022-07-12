@@ -527,7 +527,55 @@ __global__ void max_abs_element_kernel(dtype *array, int *gpu_size_x, int *gpu_s
 	}
 }
 
-void CUDA_solver::solve_pressure(double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_RS, double *gpu_P, int n, int nnzA) {
+__global__ void reset_pressure(dtype *gpu_P, dtype *gpu_qr_P, int *gpu_fluid_id, int *gpu_geometry_data, int *gpu_size_x, int *gpu_size_y) {
+
+   int k = 0;
+   
+   for (int j = 0; j < *gpu_size_y; j++) {
+     for (int i = 0; i < *gpu_size_x; i++) {
+      if ( at(gpu_geometry_data, i, j) == *gpu_fluid_id ) {
+        at(gpu_P, i, j) = gpu_qr_P[k];
+        k++;
+       }
+    }
+}
+}
+
+__global__ void update_RS(dtype *gpu_RS, dtype *gpu_qr_RS, dtype *gpu_P, int *gpu_size_x, int *gpu_size_y, int
+*gpu_geometry_data, dtype *gpu_dx, dtype *gpu_dy, int *gpu_fluid_id) {
+ 
+    int k = 0;
+
+    for (int j = 0; j < *gpu_size_y; j++) {
+        for (int i = 0; i < *gpu_size_x; i++) {
+            if( at(gpu_geometry_data, i, j) == *gpu_fluid_id) {
+                gpu_qr_RS[k] = at(gpu_RS, i, j); // B
+                if(j-1 == 0) {
+                    gpu_qr_RS[k] -= at(gpu_P,i,j-1)/(*gpu_dy * (*gpu_dy)); //B
+                }
+
+            if(i-1 == 0) {
+                    gpu_qr_RS[k] -= at(gpu_P,i-1,j)/(*gpu_dx * (*gpu_dx)); // L
+ 
+            }
+
+            if (i==*gpu_size_x-2) {
+                    gpu_qr_RS[k] -= at(gpu_P,i+1,j)/(*gpu_dx * (*gpu_dx)); // R
+
+            }
+
+            if(j == *gpu_size_y-2) {
+                    gpu_qr_RS[k] -= at(gpu_P,i,j+1)/(*gpu_dy * (*gpu_dy)); //T
+            }
+
+            k++;
+
+            }
+        }
+    }
+}
+
+void CUDA_solver::solve_pressure_cusolver(double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_qr_RS, double *gpu_qr_P, int n, int nnzA) {
     cusolverSpHandle_t handleSolver;
     cusolverStatus_t Checker = cusolverSpCreate(&handleSolver);
     
@@ -546,8 +594,12 @@ void CUDA_solver::solve_pressure(double *gpu_csrValA, int *gpu_csrRowPtrA,  int 
     
     int valuefor,*singularity = &valuefor;
     *singularity = 0;
-//std::cout << "I am here3\n";
-    cusolverStatus_t result = cusolverSpDcsrlsvluHost(handleSolver, n, nnzA, descrA, gpu_csrValA, gpu_csrRowPtrA, gpu_csrColIndA, gpu_RS, tol, reorder, gpu_P, singularity);
+    
+    cudaStream_t streamId = NULL;
+    cusolverStatus_t cudasu = cusolverSpSetStream(handleSolver, streamId);
+
+    cusolverStatus_t result = cusolverSpDcsrlsvqr(handleSolver, n, nnzA, descrA, gpu_csrValA, gpu_csrRowPtrA,
+    gpu_csrColIndA, gpu_qr_RS, tol, reorder, gpu_qr_P, singularity); 
 
     cusolverStatus_t cusolverSpDestroy(cusolverSpHandle_t handleSolver);
 
@@ -581,6 +633,9 @@ void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu
     cudaMalloc((void **)&gpu_F, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_G, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_RS, grid_size * sizeof(dtype));
+
+    cudaMalloc((void**)&gpu_qr_RS, grid_fluid_cells_size * sizeof(dtype));
+    cudaMalloc((void**)&gpu_qr_P, grid_fluid_cells_size * sizeof(dtype));
 
     cudaMalloc((void **)&gpu_csrValA, grid_size * sizeof(double));
     cudaMalloc((void **)&gpu_csrColIndA, grid_size * sizeof(int));
@@ -772,11 +827,12 @@ void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt
 
 }
 
-void CUDA_solver::calc_pressure_cusolver(int n, int nnzA) {
+void CUDA_solver::calc_pressure_direct_solve(int n, int nnzA) {
     apply_boundary();
-    std::cout << "I am here\n";
-    solve_pressure(gpu_csrValA, gpu_csrRowPtrA, gpu_csrColIndA, gpu_RS, gpu_P, n, nnzA);
-
+//    std::cout << "I am here\n";
+    update_RS<<<1, 1>>>(gpu_RS, gpu_qr_RS, gpu_P, gpu_size_x, gpu_size_y, gpu_geometry_data, gpu_dx, gpu_dy, gpu_fluid_id);
+    solve_pressure_cusolver(gpu_csrValA, gpu_csrRowPtrA, gpu_csrColIndA, gpu_qr_RS, gpu_qr_P, n, nnzA);
+    reset_pressure<<<1, 1>>>(gpu_P, gpu_qr_P, gpu_fluid_id, gpu_geometry_data, gpu_size_x,gpu_size_y);
 }
 
 void CUDA_solver::calc_T() {
@@ -900,4 +956,6 @@ CUDA_solver::~CUDA_solver() {
     cudaFree(gpu_csrRowPtrA);
     cudaFree(gpu_nnzA);
     cudaFree(gpu_n);
+    cudaFree(gpu_qr_P);
+    cudaFree(gpu_qr_RS);
 }

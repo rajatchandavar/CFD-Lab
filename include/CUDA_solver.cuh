@@ -34,6 +34,8 @@ class CUDA_solver{
     dtype *gpu_F;
     dtype *gpu_G;
     dtype *gpu_RS;
+    dtype *gpu_qr_RS;
+    dtype *gpu_qr_P;
 
     double *gpu_csrValA;
 
@@ -94,8 +96,8 @@ class CUDA_solver{
     void calc_fluxes();
     void calc_rs();
     void calc_pressure(int, dtype, dtype, dtype);
-    void solve_pressure(double *, int *,  int *, double *, double *, int , int );
-    void calc_pressure_cusolver(int , int);
+    void solve_pressure_cusolver(dtype *, int *,  int *, dtype *, dtype *, int , int );
+    void calc_pressure_direct_solve(int , int); // called in case
     void calc_velocities();
     dtype calc_dt();
     dim3 get_num_blocks(int);

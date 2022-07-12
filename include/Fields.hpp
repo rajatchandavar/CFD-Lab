@@ -130,6 +130,8 @@ class Fields {
     dtype get_gx();
     dtype get_gy();
 
+    int get_nnzA();
+
   private:
     /// x-velocity matrix
     Matrix<dtype> _U;
