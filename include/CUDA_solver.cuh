@@ -94,7 +94,7 @@ class CUDA_solver{
     void calc_fluxes();
     void calc_rs();
     void calc_pressure(int, dtype, dtype, dtype);
-    void solve_pressure(double, int,  int, double, double, int, int);
+    void solve_pressure(double *, int *,  int *, double *, double *, int , int );
     void calc_velocities();
     dtype calc_dt();
     dim3 get_num_blocks(int);

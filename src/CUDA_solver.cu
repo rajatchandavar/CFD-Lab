@@ -527,7 +527,7 @@ __global__ void max_abs_element_kernel(dtype *array, int *gpu_size_x, int *gpu_s
 	}
 }
 
-void CUDA_solver::solve_pressure(double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_RS, double *gpu_P, int *gpu_n, int *gpu_nnzA) {
+void CUDA_solver::solve_pressure(double *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, double *gpu_RS, double *gpu_P, int gpu_n, int gpu_nnzA) {
     
     cusolverSpHandle_t handleSolver;
     cusolverStatus_t Checker = cusolverSpCreate(&handleSolver);
@@ -649,8 +649,8 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(gpu_P, field.p_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
 
     cudaMemcpy(gpu_csrValA, field.csrValA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
-    cudaMemcpy(csrRowPtrA, field.csrRowPtrA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
-    cudaMemcpy(csrColIndA, field.csrColIndA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
+    cudaMemcpy(gpu_csrRowPtrA, field.csrRowPtrA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
+    cudaMemcpy(gpu_csrColIndA, field.csrColIndA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
 
     cudaMemcpy(gpu_F, field.f_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_G, field.g_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);

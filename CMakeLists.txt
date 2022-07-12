@@ -1,7 +1,7 @@
 # Definition of the minimum required cmake Version
 cmake_minimum_required(VERSION 3.0)
 # Definition of the Project
-set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
+#set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 # Later you can access the project variable like ${CFDLAB_SOURCE_DIR}
 project(CFDLAB VERSION 1.0)
 
@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_CUDA_ARCHITECTURES 86)
-set(CUDA_COMPILE_FLAGS "-arch=sm_86")
+#set(CUDA_COMPILE_FLAGS "-arch=sm_86")
 enable_language(CUDA)
 
 # Creating the executable of our project and the required dependencies
@@ -73,6 +73,8 @@ endif()
 target_link_libraries(fluidchen PRIVATE MPI::MPI_CXX)
 target_link_libraries(fluidchen PRIVATE ${VTK_LIBRARIES})
 target_link_libraries(fluidchen ${CUDA_RUNTIME_LIBRARY})
+target_link_libraries(fluidchen PRIVATE ${CUDA_cusparse_LIBRARY})
+target_link_libraries(fluidchen PRIVATE ${CUDA_cusolver_LIBRARY})
 
 install(TARGETS fluidchen DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 # If you write tests, you can include your subdirectory (in this case tests) as done here
