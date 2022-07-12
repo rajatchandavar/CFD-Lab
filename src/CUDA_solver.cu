@@ -554,21 +554,21 @@ __global__ void update_RS(dtype *gpu_RS, dtype *gpu_qr_RS, dtype *gpu_P, int *gp
                     gpu_qr_RS[k] -= at(gpu_P,i,j-1)/(*gpu_dy * (*gpu_dy)); //B
                 }
 
-            if(i-1 == 0) {
-                    gpu_qr_RS[k] -= at(gpu_P,i-1,j)/(*gpu_dx * (*gpu_dx)); // L
- 
-            }
+                if(i-1 == 0) {
+                        gpu_qr_RS[k] -= at(gpu_P,i-1,j)/(*gpu_dx * (*gpu_dx)); // L
+    
+                }
 
-            if (i==*gpu_size_x-2) {
-                    gpu_qr_RS[k] -= at(gpu_P,i+1,j)/(*gpu_dx * (*gpu_dx)); // R
+                if (i==*gpu_size_x-2) {
+                        gpu_qr_RS[k] -= at(gpu_P,i+1,j)/(*gpu_dx * (*gpu_dx)); // R
 
-            }
+                }
 
-            if(j == *gpu_size_y-2) {
-                    gpu_qr_RS[k] -= at(gpu_P,i,j+1)/(*gpu_dy * (*gpu_dy)); //T
-            }
+                if(j == *gpu_size_y-2) {
+                        gpu_qr_RS[k] -= at(gpu_P,i,j+1)/(*gpu_dy * (*gpu_dy)); //T
+                }
 
-            k++;
+                k++;
 
             }
         }
@@ -613,6 +613,7 @@ void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu
     wall_temp_h = cpu_wall_temp_h;
     wall_temp_c = cpu_wall_temp_c;
     omg = cpu_omg;
+    nnzA = field.get_nnzA();
 
     block_size = dim3(BLOCK_SIZE);
     block_size_2d = dim3(BLOCK_SIZE_X, BLOCK_SIZE_Y);
@@ -624,6 +625,7 @@ void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu
     grid_size_x = grid.imaxb();
     grid_size_y = grid.jmaxb();
     grid_fluid_cells_size = grid.fluid_cells().size();
+    n = grid_fluid_cells_size;
 
     cudaMalloc((void **)&gpu_T, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_T_temp, grid_size * sizeof(dtype));
@@ -637,12 +639,12 @@ void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu
     cudaMalloc((void**)&gpu_qr_RS, grid_fluid_cells_size * sizeof(dtype));
     cudaMalloc((void**)&gpu_qr_P, grid_fluid_cells_size * sizeof(dtype));
 
-    cudaMalloc((void **)&gpu_csrValA, grid_size * sizeof(double));
-    cudaMalloc((void **)&gpu_csrColIndA, grid_size * sizeof(int));
-    cudaMalloc((void **)&gpu_csrRowPtrA, grid_size * sizeof(int));
+    cudaMalloc((void **)&gpu_csrValA, nnzA * sizeof(double));
+    cudaMalloc((void **)&gpu_csrColIndA, nnzA * sizeof(int));
+    cudaMalloc((void **)&gpu_csrRowPtrA, (n + 1) * sizeof(int));
 
-    cudaMalloc((void **)&gpu_nnzA, grid_size * sizeof(int));
-    cudaMalloc((void **)&gpu_n, grid_size * sizeof(int));
+    cudaMalloc((void **)&gpu_nnzA, sizeof(int));
+    cudaMalloc((void **)&gpu_n, sizeof(int));
 
     cudaMalloc((void **)&gpu_dx, sizeof(dtype));
     cudaMalloc((void **)&gpu_dy, sizeof(dtype));
@@ -702,9 +704,9 @@ void CUDA_solver::pre_process(Fields &field, Grid &grid, Discretization &discret
     cudaMemcpy(gpu_V, field.v_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_P, field.p_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
 
-    cudaMemcpy(gpu_csrValA, field.csrValA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
-    cudaMemcpy(gpu_csrRowPtrA, field.csrRowPtrA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
-    cudaMemcpy(gpu_csrColIndA, field.csrColIndA_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
+    cudaMemcpy(gpu_csrValA, field.csrValA_matrix().data(), nnzA * sizeof(dtype), cudaMemcpyHostToDevice);
+    cudaMemcpy(gpu_csrRowPtrA, field.csrRowPtrA_matrix().data(), (n + 1) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(gpu_csrColIndA, field.csrColIndA_matrix().data(), nnzA * sizeof(int), cudaMemcpyHostToDevice);
 
     cudaMemcpy(gpu_F, field.f_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_G, field.g_matrix().data(), grid_size * sizeof(dtype), cudaMemcpyHostToDevice);
@@ -827,11 +829,23 @@ void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt
 
 }
 
-void CUDA_solver::calc_pressure_direct_solve(int n, int nnzA) {
+void CUDA_solver::calc_pressure_direct_solve() {
     apply_boundary();
-//    std::cout << "I am here\n";
+    std::chrono::time_point<std::chrono::system_clock> start;
+    std::chrono::time_point<std::chrono::system_clock> end;
+    
+    start = std::chrono::system_clock::now();
     update_RS<<<1, 1>>>(gpu_RS, gpu_qr_RS, gpu_P, gpu_size_x, gpu_size_y, gpu_geometry_data, gpu_dx, gpu_dy, gpu_fluid_id);
+    end = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Elapsed time update RS: " << elapsed.count() << " mseconds\n" << std::endl;
+    
+    start = std::chrono::system_clock::now();
     solve_pressure_cusolver(gpu_csrValA, gpu_csrRowPtrA, gpu_csrColIndA, gpu_qr_RS, gpu_qr_P, n, nnzA);
+    end = std::chrono::system_clock::now();
+    elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Elapsed time update cusolver: " << elapsed.count() << " mseconds\n" << std::endl;
+    
     reset_pressure<<<1, 1>>>(gpu_P, gpu_qr_P, gpu_fluid_id, gpu_geometry_data, gpu_size_x,gpu_size_y);
 }
 

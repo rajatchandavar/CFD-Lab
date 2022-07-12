@@ -28,7 +28,7 @@ Fields::Fields(dtype nu, dtype dt, dtype tau, int imax, int jmax, dtype UI, dtyp
     int id = 0;
     csrRowPtrA.push_back(id);
 
-    dtype diagEntry = -2.0/(grid.dx() * grid.dx()) -2/(grid.dy() * grid.dy());
+    dtype diagEntry = -2.0/(grid.dx() * grid.dx()) -2.0/(grid.dy() * grid.dy());
     dtype lrEntry = 1.0/(grid.dx()*grid.dx());
     dtype btEntry = 1.0/(grid.dy()*grid.dy());
 
@@ -36,42 +36,42 @@ Fields::Fields(dtype nu, dtype dt, dtype tau, int imax, int jmax, dtype UI, dtyp
         int i = currentCell->i();
         int j = currentCell->j();
 
-        int idx = j*(imax+2) + i;
+        // int idx = j*(imax+2) + i;
 
-        if(j-1>= 0) {
+        if(j-1> 0) {
             csrValA.push_back(btEntry);
-            csrColIndA.push_back(i+(imax+2)*j-(imax+2));
+            csrColIndA.push_back((i - 1) + (imax) * (j - 1) - imax);
             id++;
         }
 
-        if(i-1>= 0) {
+        if(i-1> 0) {
             csrValA.push_back(lrEntry);
-            csrColIndA.push_back(i+(imax+2)*j-1);
+            csrColIndA.push_back((i - 1) + (imax) * (j - 1) - 1);
             id++;
         }
 
         csrValA.push_back(diagEntry);
-        csrColIndA.push_back(i+(imax+2)*j);
+        csrColIndA.push_back((i - 1) + (imax) * (j - 1));
         id++;
 
-        if (i+1<imax+2) {
+        if (i+1<imax+1) {
             csrValA.push_back(lrEntry);
-            csrColIndA.push_back(i+(imax+2)*j+1);
+            csrColIndA.push_back((i - 1) + (imax) * (j - 1) + 1);
             id++;
         }
 
-        if(j+1<jmax+2) {
+        if(j+1<jmax+1) {
             csrValA.push_back(btEntry);
-            csrColIndA.push_back(i+(imax+2)*j + imax+2);
+            csrColIndA.push_back((i - 1) + (imax) * (j - 1) + imax);
             id++;
         }
 
         csrRowPtrA.push_back(id);
 
-        }
-
-        nnzA = csrValA.size();
     }
+
+    nnzA = csrValA.size();
+}
 
 /********************************************************************************
  * This function calculates fluxes F and G as mentioned in equation (9) and (10)
