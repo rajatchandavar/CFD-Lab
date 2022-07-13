@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#define USING_SINGLE_PRECISION 0
+#define USING_SINGLE_PRECISION 1
 
 #if USING_SINGLE_PRECISION
 typedef float dtype;

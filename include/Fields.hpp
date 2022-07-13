@@ -115,7 +115,7 @@ class Fields {
 
     Matrix<dtype> &rs_matrix();
 
-    std::vector<double> &csrValA_matrix();
+    std::vector<dtype> &csrValA_matrix();
     std::vector<int> &csrRowPtrA_matrix();
     std::vector<int> &csrColIndA_matrix();
 
@@ -165,7 +165,7 @@ class Fields {
     /// Check for heat transfer
     bool _isHeatTransfer;
 
-    std::vector<double> csrValA;
+    std::vector<dtype> csrValA;
     std::vector<int> csrRowPtrA;
     std::vector<int> csrColIndA;
 

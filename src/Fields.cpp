@@ -281,7 +281,7 @@ Matrix<dtype> &Fields::g_matrix() { return _G; }
 
 Matrix<dtype> &Fields::rs_matrix() { return _RS; }
 
-std::vector<double> &Fields::csrValA_matrix() { return csrValA; }
+std::vector<dtype> &Fields::csrValA_matrix() { return csrValA; }
 
 std::vector<int> &Fields::csrRowPtrA_matrix() { return csrRowPtrA; }
 

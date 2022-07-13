@@ -258,6 +258,7 @@ void Case::simulate() {
         cuda_solver.calc_rs();
         // cuda_solver.calc_pressure(_max_iter, _tolerance, t, dt);
         cuda_solver.calc_pressure_direct_solve();
+        // cuda_solver.apply_boundary();
         cuda_solver.calc_velocities();
 
         if(t >= output_counter) {

@@ -37,7 +37,7 @@ class CUDA_solver{
     dtype *gpu_qr_RS;
     dtype *gpu_qr_P;
 
-    double *gpu_csrValA;
+    dtype *gpu_csrValA;
 
     int *gpu_csrColIndA;
     int *gpu_csrRowPtrA;
