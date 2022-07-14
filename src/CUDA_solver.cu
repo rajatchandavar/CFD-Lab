@@ -461,7 +461,7 @@ __global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, int *gpu_fluid_id, 
 
     //Adding resdata[0][0] among all blocks
     if (tid_x == 0 && tid_y == 0) {
-        atomicAdd(&gpu_res, resdata[0][0]);
+        atomicAdd(gpu_res, resdata[0][0]);
         *gpu_res = *gpu_res / *gpu_fluid_cells_size;
         *gpu_res = sqrt(*gpu_res);
     }
@@ -825,7 +825,7 @@ void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt
     int iter = 0;
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
 
-    cudaMemcpy((void *)&gpu_old_P, gpu_P, sizeof(dtype)*grid_size, cudaMemcpyDeviceToDevice);
+    cudaMemcpy((void *)gpu_old_P, gpu_P, sizeof(dtype)*grid_size, cudaMemcpyDeviceToDevice);
 
     do{
         apply_boundary();
