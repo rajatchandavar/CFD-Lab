@@ -461,7 +461,7 @@ __global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, int *gpu_fluid_id, 
 
     //Adding resdata[0][0] among all blocks
     if (tid_x == 0 && tid_y == 0) {
-        atomicAdd(gpu_res, resdata[0][0]);
+        atomicAdd(&gpu_res, resdata[0][0]);
         *gpu_res = *gpu_res / *gpu_fluid_cells_size;
         *gpu_res = sqrt(*gpu_res);
     }
@@ -575,6 +575,23 @@ __global__ void update_RS(dtype *gpu_RS, dtype *gpu_qr_RS, dtype *gpu_P, int *gp
     }
 }
 
+
+__global__ void jacobi_solver(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_old_P,int *gpu_fluid_id, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
+*gpu_coeff, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data){
+
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    int j = blockIdx.y * blockDim.y + threadIdx.y;
+
+    *gpu_coeff = 1 / (2.0 * (1.0 / (*gpu_dx * *gpu_dx) + 1.0 / (*gpu_dy * *gpu_dy)));
+
+    if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id){
+        at(gpu_P,i, j) = (*gpu_coeff) * (sor_helper(gpu_old_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j));
+    }
+
+}
+
+
+
 void CUDA_solver::solve_pressure_cusolver(dtype *gpu_csrValA, int *gpu_csrRowPtrA,  int *gpu_csrColIndA, dtype *gpu_qr_RS, dtype *gpu_qr_P, int n, int nnzA) {
     cusolverSpHandle_t handleSolver;
     cusolverStatus_t Checker = cusolverSpCreate(&handleSolver);
@@ -595,7 +612,7 @@ void CUDA_solver::solve_pressure_cusolver(dtype *gpu_csrValA, int *gpu_csrRowPtr
     cudaStream_t streamId = NULL;
     cusolverStatus_t cudasu = cusolverSpSetStream(handleSolver, streamId);
 
-    cusolverStatus_t result = cusolverSpScsrlsvqr(handleSolver, n, nnzA, descrA, gpu_csrValA, gpu_csrRowPtrA,
+    cusolverStatus_t result = cusolverSpDcsrlsvqr(handleSolver, n, nnzA, descrA, gpu_csrValA, gpu_csrRowPtrA,
     gpu_csrColIndA, gpu_qr_RS, tol, reorder, gpu_qr_P, singularity); 
 
     cusolverStatus_t cusolverSpDestroy(cusolverSpHandle_t handleSolver);
@@ -629,6 +646,7 @@ void CUDA_solver::initialize(Fields &field, Grid &grid, dtype cpu_UIN, dtype cpu
     cudaMalloc((void **)&gpu_U, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_V, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_P, grid_size * sizeof(dtype));
+    cudaMalloc((void **)&gpu_old_P, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_F, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_G, grid_size * sizeof(dtype));
     cudaMalloc((void **)&gpu_RS, grid_size * sizeof(dtype));
@@ -807,14 +825,19 @@ void CUDA_solver::calc_pressure(int max_iter, dtype tolerance, dtype t, dtype dt
     int iter = 0;
     num_blocks_2d = get_num_blocks_2d(grid_size_x, grid_size_y);
 
+    cudaMemcpy((void *)&gpu_old_P, gpu_P, sizeof(dtype)*grid_size, cudaMemcpyDeviceToDevice);
+
     do{
         apply_boundary();
-        solve_pressure_red_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_fluid_id,gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
-        solve_pressure_black_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P,gpu_fluid_id, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
+        //solve_pressure_red_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_fluid_id,gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
+        //solve_pressure_black_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P,gpu_fluid_id, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
+        jacobi_solver<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_old_P, gpu_fluid_id, gpu_dx, gpu_dy, gpu_omega, gpu_coeff, gpu_size_x, gpu_size_y, gpu_geometry_data);
         calc_res_kernel<<<num_blocks_2d, block_size_2d>>>(gpu_RS, gpu_P, gpu_fluid_id, gpu_dx, gpu_dy, gpu_res, gpu_size_x, gpu_size_y, gpu_fluid_cells_size, gpu_geometry_data);
         cudaMemcpy((void *)&res, gpu_res, sizeof(dtype), cudaMemcpyDeviceToHost);
         iter++;
     }while(res > tolerance && iter < max_iter);
+    
+    
 
     if (iter == max_iter) {
         std::cout << "Max iteration reached at " << t<<" s \n";
@@ -897,7 +920,7 @@ dtype CUDA_solver::calc_dt() {
     // t[3] = 1 / (2 * (cpu_alpha) * (1/((cpu_dx)*(cpu_dx)) + 1/((cpu_dy)*(cpu_dy))));
     // dtype temp_dt =t[0];
 
-    // Previous implementation
+    //Previous implementation
     max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_U, gpu_size_x, gpu_size_y, d_mutex, gpu_umax);
     max_abs_element_kernel<<<num_blocks, block_size>>>(gpu_V, gpu_size_x, gpu_size_y, d_mutex, gpu_vmax);
     cudaMemcpy((void *)&cpu_umax, gpu_umax, sizeof(dtype), cudaMemcpyDeviceToHost);
@@ -939,6 +962,7 @@ CUDA_solver::~CUDA_solver() {
     cudaFree(gpu_U);
     cudaFree(gpu_V);
     cudaFree(gpu_P);
+    cudaFree(gpu_old_P);
     cudaFree(gpu_F);
     cudaFree(gpu_G);
     cudaFree(gpu_RS);

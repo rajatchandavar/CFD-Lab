@@ -31,6 +31,7 @@ class CUDA_solver{
     dtype *gpu_U;
     dtype *gpu_V;
     dtype *gpu_P;
+    dtype *gpu_old_P;
     dtype *gpu_F;
     dtype *gpu_G;
     dtype *gpu_RS;
