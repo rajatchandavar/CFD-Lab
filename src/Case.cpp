@@ -295,7 +295,6 @@ void Case::simulate() {
         //     output_vtk(timestep);
         //     output_counter += _output_freq;
         // }
-        std::cout << t << '\n';
     }
     std::cout<<"\n";
 

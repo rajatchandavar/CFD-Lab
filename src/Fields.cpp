@@ -24,53 +24,6 @@ Fields::Fields(dtype nu, dtype dt, dtype tau, int imax, int jmax, dtype UI, dtyp
         _V(i,j) = VI;
         _P(i,j) = PI;
     }
-
-    int id = 0;
-    csrRowPtrA.push_back(id);
-
-    dtype diagEntry = -2.0/(grid.dx() * grid.dx()) -2.0/(grid.dy() * grid.dy());
-    dtype lrEntry = 1.0/(grid.dx()*grid.dx());
-    dtype btEntry = 1.0/(grid.dy()*grid.dy());
-
-    for (auto currentCell : grid.fluid_cells()){
-        int i = currentCell->i();
-        int j = currentCell->j();
-
-        // int idx = j*(imax+2) + i;
-
-        if(j-1> 0) {
-            csrValA.push_back(btEntry);
-            csrColIndA.push_back((i - 1) + (imax) * (j - 1) - imax);
-            id++;
-        }
-
-        if(i-1> 0) {
-            csrValA.push_back(lrEntry);
-            csrColIndA.push_back((i - 1) + (imax) * (j - 1) - 1);
-            id++;
-        }
-
-        csrValA.push_back(diagEntry);
-        csrColIndA.push_back((i - 1) + (imax) * (j - 1));
-        id++;
-
-        if (i+1<imax+1) {
-            csrValA.push_back(lrEntry);
-            csrColIndA.push_back((i - 1) + (imax) * (j - 1) + 1);
-            id++;
-        }
-
-        if(j+1<jmax+1) {
-            csrValA.push_back(btEntry);
-            csrColIndA.push_back((i - 1) + (imax) * (j - 1) + imax);
-            id++;
-        }
-
-        csrRowPtrA.push_back(id);
-
-    }
-
-    nnzA = csrValA.size();
 }
 
 /********************************************************************************
@@ -281,12 +234,6 @@ Matrix<dtype> &Fields::g_matrix() { return _G; }
 
 Matrix<dtype> &Fields::rs_matrix() { return _RS; }
 
-std::vector<dtype> &Fields::csrValA_matrix() { return csrValA; }
-
-std::vector<int> &Fields::csrRowPtrA_matrix() { return csrRowPtrA; }
-
-std::vector<int> &Fields::csrColIndA_matrix() { return csrColIndA; }
-
 bool Fields::isHeatTransfer() { return _isHeatTransfer;}
 
 dtype* Fields::dt() { return &_dt; }
@@ -302,6 +249,3 @@ dtype Fields::get_tau() { return _tau;}
 dtype Fields::get_gx() { return _gx;}
 
 dtype Fields::get_gy() { return _gy;}
-
-int Fields::get_nnzA() { return nnzA; }
-

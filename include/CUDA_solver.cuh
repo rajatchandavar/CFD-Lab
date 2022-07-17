@@ -13,12 +13,6 @@
 #include <thrust/device_ptr.h>
 #include <thrust/functional.h>
 
-#include <cublas.h>
-#include <cusolver_common.h>
-#include <cusolverSp.h>
-#include <cusparse.h>
-
-
 #define BLOCK_SIZE 128
 #define BLOCK_SIZE_X 32
 #define BLOCK_SIZE_Y 32
@@ -35,16 +29,6 @@ class CUDA_solver{
     dtype *gpu_F;
     dtype *gpu_G;
     dtype *gpu_RS;
-    dtype *gpu_qr_RS;
-    dtype *gpu_qr_P;
-
-    dtype *gpu_csrValA;
-
-    int *gpu_csrColIndA;
-    int *gpu_csrRowPtrA;
-
-    int *gpu_nnzA;
-    int *gpu_n;
 
     int *gpu_geometry_data;
 
@@ -85,7 +69,7 @@ class CUDA_solver{
     dtype UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c, omg;
     dtype cpu_umax, cpu_vmax, cpu_dx, cpu_dy, cpu_nu, cpu_alpha, cpu_tau;
 
-    int grid_fluid_cells_size, n, nnzA;
+    int grid_fluid_cells_size;
   
     public:
 
@@ -97,8 +81,6 @@ class CUDA_solver{
     void calc_fluxes();
     void calc_rs();
     void calc_pressure(int, dtype, dtype, dtype);
-    void solve_pressure_cusolver(dtype *, int *,  int *, dtype *, dtype *, int , int );
-    void calc_pressure_direct_solve(); // called in case
     void calc_velocities();
     dtype calc_dt();
     dim3 get_num_blocks(int);

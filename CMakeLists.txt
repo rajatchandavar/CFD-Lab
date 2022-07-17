@@ -73,8 +73,6 @@ endif()
 target_link_libraries(fluidchen PRIVATE MPI::MPI_CXX)
 target_link_libraries(fluidchen PRIVATE ${VTK_LIBRARIES})
 target_link_libraries(fluidchen ${CUDA_RUNTIME_LIBRARY})
-target_link_libraries(fluidchen PRIVATE ${CUDA_cusparse_LIBRARY})
-target_link_libraries(fluidchen PRIVATE ${CUDA_cusolver_LIBRARY})
 
 install(TARGETS fluidchen DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 # If you write tests, you can include your subdirectory (in this case tests) as done here
