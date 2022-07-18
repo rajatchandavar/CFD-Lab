@@ -25,7 +25,6 @@ class CUDA_solver{
     dtype *gpu_U;
     dtype *gpu_V;
     dtype *gpu_P;
-    dtype *gpu_old_P;
     dtype *gpu_F;
     dtype *gpu_G;
     dtype *gpu_RS;
@@ -62,14 +61,16 @@ class CUDA_solver{
 
     dim3 block_size, num_blocks, block_size_2d, num_blocks_2d;
 
-    //int *geom_check;
-    int *d_mutex;
-
-    //dim3 *gpu_numblocks, *gpu_blocksize;
     dtype UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c, omg;
     dtype cpu_umax, cpu_vmax, cpu_dx, cpu_dy, cpu_nu, cpu_alpha, cpu_tau;
 
     int grid_fluid_cells_size;
+
+    thrust::device_ptr<dtype> thrust_U, thrust_V;
+    thrust::device_ptr<dtype> thrust_U_max, thrust_U_min, thrust_V_max, thrust_V_min;
+    thrust::device_ptr<dtype> thrust_res;
+
+    thrust::maximum<dtype> get_max;
   
     public:
 

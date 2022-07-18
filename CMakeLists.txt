@@ -14,7 +14,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(CMAKE_CUDA_ARCHITECTURES 86)
-set(CUDA_COMPILE_FLAGS "-arch=sm_86")
+set(CUDA_COMPILE_FLAGS "-arch=sm_86 -lineinfo")
 enable_language(CUDA)
 
 # Creating the executable of our project and the required dependencies
