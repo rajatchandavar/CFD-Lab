@@ -393,8 +393,6 @@ __global__ void solve_pressure_red_kernel(dtype *gpu_RS, dtype *gpu_P, int *gpu_
     if (i < *gpu_size_x && j < *gpu_size_y && at(gpu_geometry_data, i, j) == *gpu_fluid_id && (i + j)%2 != 0){
         at(gpu_P,i, j) = (1.0 - *gpu_omega) * at(gpu_P,i, j) +
                         (*gpu_coeff) * (sor_helper(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j));
-        at(gpu_P,i, j) = (1.0 - *gpu_omega) * at(gpu_P,i, j) +
-                        (*gpu_coeff) * (sor_helper(gpu_P, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - at(gpu_RS,i, j));
     }
 
 }
