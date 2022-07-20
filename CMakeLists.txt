@@ -18,16 +18,16 @@ set(CUDA_COMPILE_FLAGS "-arch=sm_86")
 enable_language(CUDA)
 
 # Creating the executable of our project and the required dependencies
-# the executable is called fluidchen
+# the executable is called fluG
 file(GLOB files src/*.cpp)
 file(GLOB cuda_files src/*.cu)
-add_executable(fluidchen ${files} ${cuda_files})
+add_executable(fluG ${files} ${cuda_files})
 
-set_property(TARGET fluidchen PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+set_property(TARGET fluG PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
-target_compile_definitions(fluidchen PUBLIC -Dsolution_liddriven)
-target_compile_definitions(fluidchen PUBLIC -Dsolution_energy)
-target_compile_definitions(fluidchen PUBLIC -Dsolution_parallelization)
+target_compile_definitions(fluG PUBLIC -Dsolution_liddriven)
+target_compile_definitions(fluG PUBLIC -Dsolution_energy)
+target_compile_definitions(fluG PUBLIC -Dsolution_parallelization)
 
 
 # You can find package likes
@@ -51,17 +51,17 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9")
     message("g++ Version is lower than Version 9")
     if (NOT APPLE)  
-      target_link_libraries(fluidchen PUBLIC stdc++fs)
+      target_link_libraries(fluG PUBLIC stdc++fs)
     endif()
     else()
     message("g++ Version is 9 or higher")
-    target_compile_definitions(fluidchen PUBLIC gpp9)
-    target_compile_definitions(fluidchen PUBLIC -DGCC_VERSION_9_OR_HIGHER)
+    target_compile_definitions(fluG PUBLIC gpp9)
+    target_compile_definitions(fluG PUBLIC -DGCC_VERSION_9_OR_HIGHER)
   endif()
 endif()
 
 # Add include directory
-target_include_directories(fluidchen PUBLIC include)
+target_include_directories(fluG PUBLIC include)
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
@@ -70,10 +70,10 @@ if(NOT DEFINED CMAKE_INSTALL_PREFIX)
 endif()
 
 # if you use external libraries you have to link them like
-target_link_libraries(fluidchen PRIVATE MPI::MPI_CXX)
-target_link_libraries(fluidchen PRIVATE ${VTK_LIBRARIES})
-target_link_libraries(fluidchen ${CUDA_RUNTIME_LIBRARY})
+target_link_libraries(fluG PRIVATE MPI::MPI_CXX)
+target_link_libraries(fluG PRIVATE ${VTK_LIBRARIES})
+target_link_libraries(fluG ${CUDA_RUNTIME_LIBRARY})
 
-install(TARGETS fluidchen DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(TARGETS fluG DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
 # If you write tests, you can include your subdirectory (in this case tests) as done here
 # Testing

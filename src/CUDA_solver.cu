@@ -7,13 +7,17 @@
 #ifndef __CUDACC__
 #define __CUDACC__
 #endif
+
+//Conversion from 2D array to 1D. Required inside GPU kernels as they don't understand 2D notation i.e. [..][..]
 #define at(var, i, j) var[(j) * (*gpu_size_x) + (i)]
 
+// Few directives to check that we are not going out of bounds
 #define check_bound_north(j) ((j + 1) < *gpu_size_y)
 #define check_bound_south(j) ((j - 1) >= 0)
 #define check_bound_east(i) ((i + 1) < *gpu_size_x)
 #define check_bound_west(i) ((i - 1) >=0)
 
+// Few functionalities on the GPU to aid discretization
 __device__ dtype interpolate(dtype *A, int i, int j, int i_offset, int j_offset, int *gpu_size_x) {
     dtype result = (at(A, i, j) + at(A, i + i_offset, j + j_offset)) / 2;
     return result;
@@ -26,7 +30,6 @@ __device__ dtype diffusion(dtype *A, int i, int j, dtype gpu_dx, dtype gpu_dy, i
     return result;
 }
 
-//NO NEED TO PASS ALL OF gpu_U, V only surrounding of i,j sufficient
 __device__ dtype convection_u(dtype *gpu_U, dtype *gpu_V, dtype gpu_gamma, int i, int j, dtype gpu_dx, dtype gpu_dy, int *gpu_size_x) {
 
     dtype t1 = interpolate(gpu_U, i, j, 1, 0, gpu_size_x);
@@ -92,6 +95,8 @@ dim3 CUDA_solver::get_num_blocks(int size) { return (size + BLOCK_SIZE - 1) / BL
 dim3 CUDA_solver::get_num_blocks_2d(int gpu_size_x, int gpu_size_y) {
     return (dim3((gpu_size_x + BLOCK_SIZE_X - 1) / BLOCK_SIZE_X, (gpu_size_y + BLOCK_SIZE_Y - 1) / BLOCK_SIZE_Y));
 }
+
+// Kernels to apply boundary conditions
 
 __global__ void FixedWallBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_T, int *gpu_geometry_data,
 int *gpu_fluid_id, int *gpu_moving_wall_id, int *gpu_fixed_wall_id, int *gpu_inflow_id, int *gpu_outflow_id, int *gpu_adiabatic_id, int *gpu_hot_id,
@@ -294,6 +299,7 @@ __global__ void OutFlowBoundary(dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype 
     }
 }
 
+// Kernel to calculate Temperature
 __global__ void calc_T_kernel(dtype *gpu_T, dtype *gpu_T_temp, dtype *gpu_U, dtype *gpu_V, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_dt,
                               dtype *gpu_alpha, dtype *gpu_gamma, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     //NEED TO DO THIS ONLY FOR FLUID CELLS
@@ -303,6 +309,7 @@ __global__ void calc_T_kernel(dtype *gpu_T, dtype *gpu_T_temp, dtype *gpu_U, dty
         at(gpu_T, i, j) = (*gpu_dt) * (*gpu_alpha * diffusion(gpu_T_temp, i, j, *gpu_dx, *gpu_dy, gpu_size_x) - convection_Tu(gpu_T_temp, gpu_U, i, j, *gpu_dx, *gpu_dy, *gpu_gamma, gpu_size_x) - convection_Tv(gpu_T_temp, gpu_V, i, j, *gpu_dx, *gpu_dy, *gpu_gamma, gpu_size_x)) + at(gpu_T_temp, i, j);
 }
 
+// Kernel to calculate fluxes
 __global__ void calc_fluxes_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, dtype *gpu_T, int *gpu_geometry_data, dtype *gpu_gx, dtype *gpu_gy, dtype *gpu_dx, dtype *gpu_dy, int *gpu_size_x, int *gpu_size_y, dtype *gpu_gamma, dtype *gpu_beta,
                              dtype *gpu_nu, dtype *gpu_dt, bool *gpu_isHeatTransfer) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -321,6 +328,7 @@ __global__ void calc_fluxes_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dty
     }
 }
 
+// Kernel to apply fluxes F and G boundary conditions
 __global__ void fluxes_bc_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, int *gpu_geometry_data, int *gpu_size_x, int *gpu_size_y) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -384,6 +392,7 @@ __global__ void fluxes_bc_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype
     }
 }
 
+// Kernel to calculate pressure on red cells in the Red-Black SOR
 __global__ void solve_pressure_red_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
 *gpu_coeff, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -398,6 +407,7 @@ __global__ void solve_pressure_red_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gp
 
 }
 
+// Kernel to calculate pressure on black cells in the Red-Black SOR
 __global__ void solve_pressure_black_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_omega, dtype
 *gpu_coeff, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -412,6 +422,7 @@ __global__ void solve_pressure_black_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *
 
 }
 
+// Kernel to calculate residual after an iteration of Red-Black SOR
 __global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_res, int *gpu_size_x, int *gpu_size_y, int *gpu_fluid_cells_size, int *gpu_geometry_data){
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -467,6 +478,7 @@ __global__ void calc_res_kernel(dtype *gpu_RS, dtype *gpu_P, dtype *gpu_dx, dtyp
     }
 }
 
+// Kernel to calculate RHS of Pressure Laplace equation
 __global__ void calc_rs_kernel(dtype *gpu_RS, dtype *gpu_F, dtype *gpu_G,dtype *gpu_dx, dtype *gpu_dy, dtype *gpu_dt, int *gpu_size_x, int *gpu_size_y, int *gpu_geometry_data) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -474,6 +486,7 @@ __global__ void calc_rs_kernel(dtype *gpu_RS, dtype *gpu_F, dtype *gpu_G,dtype *
         at(gpu_RS,i,j) = 1 / (*gpu_dt) * ((at(gpu_F,i, j) - at(gpu_F,i - 1, j)) / (*gpu_dx) + (at(gpu_G,i, j) - at(gpu_G,i, j - 1)) / (*gpu_dy));
 }
 
+// Kernel to calculate velocity
 __global__ void calc_velocities_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U, dtype *gpu_V, dtype *gpu_P, dtype *gpu_dx, dtype *gpu_dy, int *gpu_size_x, int *gpu_size_y, dtype *gpu_dt, int *gpu_geometry_data)
 {   
     int i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -490,6 +503,7 @@ __global__ void calc_velocities_kernel(dtype *gpu_F, dtype *gpu_G, dtype *gpu_U,
     }
 }
 
+// Kernel to calculate maximum absolute element in a array
 __global__ void max_abs_element_kernel(dtype *array, int *gpu_size_x, int *gpu_size_y, int *d_mutex, dtype *array_max)
 {
 
@@ -780,11 +794,6 @@ dtype CUDA_solver::calc_dt() {
     result = (cpu_tau) * temp_dt;
     cudaMemcpy(gpu_dt, &result, sizeof(dtype), cudaMemcpyHostToDevice);
     return result;
-    // *gpu_dt = result;
-    
-    // calc_dt_kernel<<<1,1>>>(gpu_numblocks, gpu_blocksize, gpu_U,gpu_V, gpu_umax, gpu_vmax, gpu_size_x, gpu_size_y,gpu_dx, gpu_dy,d_mutex,gpu_nu, gpu_alpha, gpu_tau, gpu_dt);
-    // cudaMemcpy((void *)&dt, gpu_dt, sizeof(dtype), cudaMemcpyDeviceToHost);
-
 }
 
 void CUDA_solver::post_process(Fields &field) {

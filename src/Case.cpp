@@ -162,6 +162,7 @@ Case::Case(std::string file_name, int argn, char **args) {
         _boundaries.push_back(std::make_unique<OutFlowBoundary>(_grid.outflow_cells(), GEOMETRY_PGM::POUT));
     }
 
+    // CUDA Solver initialized
     cuda_solver.initialize(_field, _grid, UIN, VIN, wall_temp_a, wall_temp_h, wall_temp_c, omg);
 }
 
